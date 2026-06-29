@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /activities/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /members/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /siteSettings/{id} {
+      allow read: if id == 'public' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /lotteryEntries/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /lotteryDraws/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /adminAuditLogs/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

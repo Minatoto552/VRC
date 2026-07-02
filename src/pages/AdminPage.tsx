@@ -254,7 +254,7 @@ export const AdminPage = () => {
   };
 
   const guardFallback = (
-    <section className="section-card admin-login-card">
+    <section className="section-card admin-login-card admin-console-card">
       <div className="section-heading">
         <div>
           <span className="eyebrow">Admin Access</span>
@@ -298,7 +298,7 @@ export const AdminPage = () => {
   return (
     <AdminGuard allowed={isAdminSignedIn} fallback={guardFallback}>
       <div className="page-stack">
-        <section className="section-card">
+        <section className="section-card admin-console-card">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Operations Console</span>

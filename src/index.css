@@ -2007,6 +2007,12 @@ main {
   margin: 0 auto;
 }
 
+.admin-console-card .section-heading h1,
+.admin-console-card .section-heading h2 {
+  max-width: none;
+  line-height: 1.08;
+}
+
 .admin-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -2020,6 +2026,8 @@ main {
   background: rgba(255, 250, 244, 0.88);
   color: var(--ink-soft);
   border: 1px solid var(--border);
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(33, 21, 15, 0.08);
 }
 
 .admin-tab.is-active {

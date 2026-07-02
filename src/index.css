@@ -1025,6 +1025,100 @@ main {
   line-height: 1.55;
 }
 
+.manifesto-panel {
+  padding-block: 28px;
+}
+
+.manifesto-grid,
+.concept-stage-grid,
+.concept-preview-grid,
+.overview-stat-grid,
+.feature-moment-list {
+  display: grid;
+  gap: 16px;
+}
+
+.manifesto-grid,
+.concept-stage-grid,
+.overview-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.manifesto-card,
+.concept-stage-card,
+.concept-preview-card,
+.feature-moment-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.manifesto-card::before,
+.concept-stage-card::before,
+.feature-moment-card::before {
+  content: '';
+  position: absolute;
+  inset: auto -10% -40% auto;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 193, 121, 0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.manifesto-icon,
+.concept-stage-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(106, 132, 89, 0.16), rgba(189, 116, 66, 0.12));
+  color: var(--brand-strong);
+  box-shadow: inset 0 0 0 1px rgba(132, 93, 59, 0.08);
+}
+
+.detail-card-spotlight {
+  background:
+    radial-gradient(circle at top right, rgba(255, 230, 188, 0.34), transparent 32%),
+    linear-gradient(180deg, rgba(255, 248, 240, 0.94), rgba(239, 229, 216, 0.88));
+}
+
+.feature-moment-list {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.feature-moment-card {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(132, 93, 59, 0.1);
+  background: rgba(255, 252, 247, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.feature-moment-card span {
+  display: block;
+  color: var(--accent-dark);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feature-moment-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  font-size: 1.15rem;
+}
+
+.feature-moment-card p,
+.metric-card p,
+.concept-preview-card p {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+}
+
 .hero-scene-summary {
   min-height: clamp(260px, 48vw, 380px);
   border-top: 1px dashed rgba(204, 171, 121, 0.22);
@@ -1398,6 +1492,20 @@ main {
 .mini-faq-list {
   display: grid;
   gap: 16px;
+}
+
+.story-step-list-wide li {
+  padding: 18px 20px;
+}
+
+.concept-preview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.concept-closing-card {
+  background:
+    radial-gradient(circle at top right, rgba(240, 204, 152, 0.28), transparent 32%),
+    linear-gradient(180deg, rgba(249, 242, 234, 0.88), rgba(233, 222, 209, 0.76));
 }
 
 .hero-visual {

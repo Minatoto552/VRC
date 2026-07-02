@@ -36,7 +36,7 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
       <PageIntro
         eyebrow="Activity Calendar"
         title="活動予定カレンダー"
-        description="黒板メニューを見るような感覚で、次回の活動や月ごとの予定をひと目で確認できます。スマートフォンでも日付と内容が追いやすい配置に整えています。"
+        description="黒板メニューを見るような感覚で、次回の活動や月ごとの予定をひと目で確認できます。スマートフォンでも日付と内容が追いやすく、重要な予定が埋もれにくい配置に整えています。"
         imageSrc={illustrations.scheduleGuide}
         imageAlt="予定表を案内するカフェ風イラスト"
         caption="Schedule Scene"
@@ -48,6 +48,26 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
         <strong>今月の見どころ</strong>
         <p>気になる日付を選ぶと、その日の活動内容や集合場所、対象者を下のカードで確認できます。</p>
       </PageIntro>
+
+      <section className="section-card">
+        <div className="overview-stat-grid">
+          <article className="metric-card">
+            <span>Next Date</span>
+            <strong>{nextActivity ? formatDate(nextActivity.date) : '調整中'}</strong>
+            <p>次回予定が決まっている場合は、トップとカレンダー上部の両方から確認できます。</p>
+          </article>
+          <article className="metric-card">
+            <span>Public Events</span>
+            <strong>{publicActivities.length}件</strong>
+            <p>公開対象の予定だけを表示し、一般の閲覧者が迷わないよう絞り込んでいます。</p>
+          </article>
+          <article className="metric-card">
+            <span>How to Use</span>
+            <strong>日付を選択</strong>
+            <p>気になる日を押すだけで、下のカードが切り替わり、その日の内容を確認できます。</p>
+          </article>
+        </div>
+      </section>
 
       <section className="section-card">
         <div className="section-heading">

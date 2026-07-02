@@ -39,6 +39,26 @@ export const JoinPage = ({ guideNote }: JoinPageProps) => (
     </PageIntro>
 
     <section className="section-card">
+      <div className="overview-stat-grid">
+        <article className="metric-card">
+          <span>Step Count</span>
+          <strong>{joinSteps.length}</strong>
+          <p>必要な行動を絞って並べているので、最初に全体像をつかみやすくしています。</p>
+        </article>
+        <article className="metric-card">
+          <span>First Action</span>
+          <strong>プロフィール確認</strong>
+          <p>最初に部長のVRChatプロフィールを確認すると、その後の流れを追いやすくなります。</p>
+        </article>
+        <article className="metric-card">
+          <span>Interview Style</span>
+          <strong>軽い面接</strong>
+          <p>威圧的な選考ではなく、お互いに安心して活動できるかを確認するための案内です。</p>
+        </article>
+      </div>
+    </section>
+
+    <section className="section-card">
       <div className="section-heading">
         <div>
           <span className="eyebrow">Step Guide</span>

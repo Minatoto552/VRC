@@ -18,10 +18,10 @@ interface SiteLayoutProps {
 
 const navigationItems = [
   { to: '/', label: 'ホーム' },
+  { to: '/concept', label: '会場案内' },
   { to: '/schedule', label: '活動予定' },
   { to: '/members', label: '部員紹介' },
   { to: '/join', label: '入部案内' },
-  { to: '/lottery', label: '抽選受付' },
   { to: '/faq', label: 'よくある質問' },
 ];
 
@@ -107,10 +107,9 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
           <div className="runtime-banner" role="status" aria-live="polite">
             <CircleAlert size={18} />
             <div>
-              <strong>現在はサンプル表示です。</strong>
+              <strong>現在は公開準備中の表示です。</strong>
               <p>
-                Firebase が未設定のため、公開ページはサンプルデータで表示しています。管理ログインや抽選受付を本番相当で使うには
-                Firebase の設定が必要です。
+                一部の掲載内容は確認用サンプルを含みます。最新の予定や部員情報は、公開準備に合わせて順次反映されます。
               </p>
             </div>
           </div>

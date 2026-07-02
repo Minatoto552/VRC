@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import type { PublicContent } from '../shared/models';
 import { SiteLayout } from './components/SiteLayout';
 import { loadPublicContent } from './lib/api';
 import { samplePublicContent } from './lib/sample-data';
 import { AdminPage } from './pages/AdminPage';
+import { ConceptPage } from './pages/ConceptPage';
 import { FaqPage } from './pages/FaqPage';
 import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
-import { LotteryPage } from './pages/LotteryPage';
 import { MembersPage } from './pages/MembersPage';
 import { SchedulePage } from './pages/SchedulePage';
 
@@ -181,10 +181,11 @@ const App = () => {
     <SiteLayout content={content} loading={loading} runtimeNotice={runtimeNotice}>
       <Routes>
         <Route path="/" element={<HomePage content={content} />} />
+        <Route path="/concept" element={<ConceptPage content={content} />} />
         <Route path="/schedule" element={<SchedulePage activities={content.activities} />} />
         <Route path="/members" element={<MembersPage members={content.members} />} />
         <Route path="/join" element={<JoinPage guideNote={content.settings.joinGuideNote} />} />
-        <Route path="/lottery" element={<LotteryPage settings={content.settings} />} />
+        <Route path="/lottery" element={<Navigate to="/concept" replace />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>

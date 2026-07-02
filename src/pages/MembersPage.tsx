@@ -15,7 +15,7 @@ export const MembersPage = ({ members }: MembersPageProps) => {
       <PageIntro
         eyebrow="Cast Members"
         title="部員紹介"
-        description="運営の顔ぶれやプロフィールカードを見ながら、役職や担当、この人となりを知ってもらえるように整理しました。部長と副部長は少し目を引く見せ方にしています。"
+        description="運営の顔ぶれやプロフィールカードを見ながら、役職や担当、この人となりを知ってもらえるように整理しました。部長と副部長は少し目を引く見せ方にしつつ、全員が同じ空気感で並ぶようまとめています。"
         imageSrc={illustrations.membersGuide}
         imageAlt="部員紹介を案内するカフェ風イラスト"
         caption="Members Wall"
@@ -25,6 +25,26 @@ export const MembersPage = ({ members }: MembersPageProps) => {
         <strong>プロフィールの見かた</strong>
         <p>役職、担当、好きな飲み物まで並べて表示し、初見でも雰囲気をつかみやすいカード構成にしています。</p>
       </PageIntro>
+
+      <section className="section-card">
+        <div className="overview-stat-grid">
+          <article className="metric-card">
+            <span>Public Members</span>
+            <strong>{members.length}名</strong>
+            <p>公開中の部員だけを表示し、役職や担当がすぐ分かる構成にしています。</p>
+          </article>
+          <article className="metric-card">
+            <span>Leadership</span>
+            <strong>{leadershipCount}名</strong>
+            <p>部長と副部長は少し強めのカードで見せ、チームの中心が把握しやすくなっています。</p>
+          </article>
+          <article className="metric-card">
+            <span>Profile Tone</span>
+            <strong>人柄重視</strong>
+            <p>役割だけでなく、短い自己紹介や好きな飲み物も添えて親しみやすさを残しています。</p>
+          </article>
+        </div>
+      </section>
 
       <section className="section-card">
         <div className="section-heading">

@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 import type { PublicContent } from '../../shared/models';
 import { findNextActivity, formatDate, formatTimeRange } from '../lib/format';
-import { CAFE_LOTTERY_PULSE_EVENT } from '../lib/cafe-scene-events';
 
 interface CafeSceneCanvasProps {
   content: PublicContent;
@@ -18,7 +16,7 @@ type SceneName =
   | 'chalkboard'
   | 'members'
   | 'guide'
-  | 'lottery'
+  | 'concept'
   | 'closing'
   | 'admin';
 
@@ -55,7 +53,7 @@ const sceneVectors: Record<SceneName, VectorTriplet> = {
     position: [5, 2.45, 8.4],
     lookAt: [5.25, 2.05, 4.2],
   },
-  lottery: {
+  concept: {
     position: [1.45, 2.15, 5.05],
     lookAt: [1.1, 1.55, 0.9],
   },
@@ -75,7 +73,7 @@ const mobileSceneOffsets: Partial<Record<SceneName, [number, number, number]>> =
   chalkboard: [-0.45, 0.05, 0.7],
   members: [0.45, 0.05, 0.9],
   guide: [-0.35, 0.05, 0.8],
-  lottery: [0.2, 0.05, 0.7],
+  concept: [0.2, 0.05, 0.7],
   closing: [0, 0.1, 0.9],
   admin: [0.15, 0.05, 0.8],
 };
@@ -84,7 +82,7 @@ const routeSceneMap: Record<string, SceneName> = {
   '/schedule': 'chalkboard',
   '/members': 'members',
   '/join': 'guide',
-  '/lottery': 'lottery',
+  '/concept': 'concept',
   '/faq': 'closing',
   '/admin': 'admin',
 };
@@ -310,8 +308,6 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
     const pointerTarget = new THREE.Vector2();
     const pointerCurrent = new THREE.Vector2();
     const activeScene = { current: 'entrance' as SceneName };
-    const animationClock = { current: 0 };
-    const lotteryPulse = { current: 0 };
 
     const root = new THREE.Group();
     scene.add(root);
@@ -631,29 +627,36 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
     counterGroup.add(glassCup);
     shimmerMaterials.push(glassCup.material);
 
-    const lotteryMachine = new THREE.Group();
-    lotteryMachine.position.set(1.32, 1.73, 0.72);
-    const lotteryBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.44, 0.2, 16), woodLight);
-    const lotteryFrame = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.48, 0.16), brass);
-    lotteryFrame.position.y = 0.28;
-    const lotteryGlobe = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 20), glass);
-    lotteryGlobe.position.y = 0.58;
-    const lotteryKnob = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), brass);
-    lotteryKnob.rotation.z = Math.PI / 2;
-    lotteryKnob.position.set(0.34, 0.36, 0);
-    const ticketTray = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.32), brassDim);
-    ticketTray.position.set(0, 0.06, 0.32);
-    lotteryMachine.add(lotteryBase, lotteryFrame, lotteryGlobe, lotteryKnob, ticketTray);
-    counterGroup.add(lotteryMachine);
+    const conceptStand = new THREE.Group();
+    conceptStand.position.set(1.32, 1.73, 0.72);
+    const conceptBase = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.46, 0.18, 18), woodLight);
+    const conceptStem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 14), brassDim);
+    conceptStem.position.y = 0.26;
+    const conceptPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.38, 0.06, 18), brass);
+    conceptPlate.position.y = 0.48;
+    const conceptCloche = new THREE.Mesh(new THREE.SphereGeometry(0.26, 22, 22), glass);
+    conceptCloche.scale.set(1, 0.85, 1);
+    conceptCloche.position.y = 0.72;
+    const conceptKnob = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), brass);
+    conceptKnob.position.y = 0.96;
+    conceptStand.add(conceptBase, conceptStem, conceptPlate, conceptCloche, conceptKnob);
+    counterGroup.add(conceptStand);
 
-    const lotteryTicket = new THREE.Mesh(
-      new RoundedBoxGeometry(0.36, 0.02, 0.2, 4, 0.02),
+    const guestCard = new THREE.Mesh(
+      new RoundedBoxGeometry(0.4, 0.02, 0.24, 4, 0.02),
       ticketMaterial,
     );
-    lotteryTicket.position.set(1.32, 1.92, 1.04);
-    lotteryTicket.rotation.set(-0.4, 0.18, 0.08);
-    lotteryTicket.visible = false;
-    counterGroup.add(lotteryTicket);
+    guestCard.position.set(1.72, 1.82, 0.42);
+    guestCard.rotation.set(-0.4, -0.32, 0.18);
+    counterGroup.add(guestCard);
+
+    const menuTent = new THREE.Mesh(
+      new RoundedBoxGeometry(0.3, 0.26, 0.04, 4, 0.02),
+      ceramic,
+    );
+    menuTent.position.set(0.98, 1.84, 0.28);
+    menuTent.rotation.x = -0.35;
+    counterGroup.add(menuTent);
 
     [-3, -1.2, 0.8].forEach((x, index) => {
       const stool = createChair(upholstery, brassDim, 0.6);
@@ -942,40 +945,6 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
       reducedMotion = event.matches;
     };
 
-    const pulseLotteryMachine = () => {
-      lotteryPulse.current = 1;
-      lotteryTicket.visible = true;
-      lotteryTicket.position.set(1.32, 1.92, 1.04);
-      lotteryTicket.rotation.set(-0.4, 0.18, 0.08);
-
-      gsap.killTweensOf(lotteryMachine.rotation);
-      gsap.killTweensOf(lotteryTicket.position);
-      gsap.killTweensOf(lotteryTicket.rotation);
-
-      gsap.to(lotteryMachine.rotation, {
-        y: lotteryMachine.rotation.y + 0.35,
-        z: 0.12,
-        duration: 0.28,
-        yoyo: true,
-        repeat: 1,
-        ease: 'power2.inOut',
-      });
-      gsap.to(lotteryTicket.position, {
-        y: 2.18,
-        z: 1.18,
-        duration: 0.55,
-        ease: 'power2.out',
-      });
-      gsap.to(lotteryTicket.rotation, {
-        z: 0.22,
-        duration: 0.55,
-        ease: 'power2.out',
-      });
-      window.setTimeout(() => {
-        lotteryTicket.visible = false;
-      }, 900);
-    };
-
     const render = () => {
       if (disposed) {
         return;
@@ -983,7 +952,6 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
 
       frame = window.requestAnimationFrame(render);
       const elapsed = performance.now() * 0.001;
-      animationClock.current = elapsed;
 
       pointerCurrent.lerp(pointerTarget, reducedMotion ? 0.12 : 0.05);
 
@@ -1052,18 +1020,17 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
       });
 
       skylineLights.forEach((light, index) => {
-        light.material.emissiveIntensity =
-          0.55 + Math.sin(elapsed * 0.85 + index * 0.6) * 0.22 + Math.max(lotteryPulse.current, 0) * 0.08;
+        light.material.emissiveIntensity = 0.55 + Math.sin(elapsed * 0.85 + index * 0.6) * 0.22;
       });
 
       signGlow.intensity = reducedMotion ? 3.1 : 3.1 + Math.sin(elapsed * 1.1) * 0.45;
       glowMaterial.emissiveIntensity = reducedMotion ? 1.55 : 1.55 + Math.sin(elapsed * 1.5) * 0.18;
-      lotteryPulse.current = Math.max(0, lotteryPulse.current - 0.022);
-      lotteryMachine.rotation.y += 0.004 + lotteryPulse.current * 0.045;
-
-      const lotteryGlobeMaterial = lotteryGlobe.material;
-      if (lotteryGlobeMaterial instanceof THREE.MeshPhysicalMaterial) {
-        lotteryGlobeMaterial.opacity = 0.42 + lotteryPulse.current * 0.18;
+      conceptStand.rotation.y = reducedMotion ? 0.12 : Math.sin(elapsed * 0.65) * 0.08 + 0.12;
+      guestCard.rotation.z = 0.18 + (reducedMotion ? 0 : Math.sin(elapsed * 0.9) * 0.03);
+      if (conceptCloche.material instanceof THREE.MeshPhysicalMaterial) {
+        conceptCloche.material.opacity = reducedMotion
+          ? 0.42
+          : 0.42 + Math.sin(elapsed * 0.8) * 0.04;
       }
 
       shimmerMaterials.forEach((material, index) => {
@@ -1084,7 +1051,6 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
     window.addEventListener('resize', updateScene);
     window.addEventListener('scroll', updateScene, { passive: true });
     window.addEventListener('pointermove', updatePointer, { passive: true });
-    window.addEventListener(CAFE_LOTTERY_PULSE_EVENT, pulseLotteryMachine);
     reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
 
     return () => {
@@ -1094,7 +1060,6 @@ export const CafeSceneCanvas = ({ content }: CafeSceneCanvasProps) => {
       window.removeEventListener('resize', updateScene);
       window.removeEventListener('scroll', updateScene);
       window.removeEventListener('pointermove', updatePointer);
-      window.removeEventListener(CAFE_LOTTERY_PULSE_EVENT, pulseLotteryMachine);
       reducedMotionQuery.removeEventListener('change', handleReducedMotionChange);
 
       signTexture.dispose();

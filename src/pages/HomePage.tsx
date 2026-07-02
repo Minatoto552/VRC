@@ -1,4 +1,4 @@
-import { ArrowRight, Coffee, LampDesk, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Coffee, LampDesk, MoonStar, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { Activity, PublicContent } from '../../shared/models';
@@ -10,7 +10,6 @@ import {
   findNextActivity,
   formatDate,
   formatTimeRange,
-  lotteryStatusLabels,
 } from '../lib/format';
 import { fallbackPhotoStripItems } from '../lib/photo-strip';
 
@@ -18,23 +17,61 @@ interface HomePageProps {
   content: PublicContent;
 }
 
+const manifestoCards = [
+  {
+    title: '入りやすさ',
+    description:
+      '高級すぎる演出ではなく、初参加でも雰囲気をつかみやすい距離感と案内を優先しています。',
+    icon: Coffee,
+  },
+  {
+    title: '夜の没入感',
+    description:
+      'やわらかな照明、木目、窓際の夜景、ゆっくりしたアニメーションで、静かな高揚感をつくります。',
+    icon: MoonStar,
+  },
+  {
+    title: 'わかりやすさ',
+    description:
+      '活動予定、部員紹介、入部案内の導線を整理し、スマートフォンでも迷わず読み進められるよう整えています。',
+    icon: Users,
+  },
+] as const;
+
 const joinFlow = [
   '部長のVRChatプロフィールを開く',
-  '部長へフレンド申請を送る',
-  '説明会へ参加し、軽い面接を受ける',
-];
+  'フレンド申請を送り、説明会の案内を待つ',
+  '説明会と軽い面接を経て、活動方針を確認する',
+] as const;
 
 const faqPreview = [
   'イベント部はどのような活動をしていますか？',
   'VRChat初心者でも入部できますか？',
-  '抽選にはどの名前を書けばよいですか？',
-];
+  '参加前に確認しておくことはありますか？',
+] as const;
+
+const featureMoments = [
+  {
+    title: 'Next Gathering',
+    value: '次回予定',
+    description: '活動名、開催日、集合場所をひと目で追えるように整理しています。',
+  },
+  {
+    title: 'Night Counter',
+    value: '空間演出',
+    description: '3D背景とカードUIを重ね、ページをまたいでも世界観が切れない構成です。',
+  },
+  {
+    title: 'Open Guide',
+    value: '入部導線',
+    description: '説明会までの流れを短いステップで示し、はじめてでも迷いにくくしています。',
+  },
+] as const;
 
 const sectionArt = {
   faq: illustrations.faqGuide,
   hero: illustrations.welcomeGuide,
   join: illustrations.joinGuide,
-  lottery: illustrations.lotteryGuide,
   members: illustrations.membersGuide,
   schedule: illustrations.scheduleGuide,
 } as const;
@@ -85,33 +122,31 @@ export const HomePage = ({ content }: HomePageProps) => {
   const previewActivities = content.activities.slice(0, 3);
   const previewMembers = content.members.slice(0, 3);
   const publicMemberCount = content.members.length;
+  const publicActivityCount = content.activities.length;
   const nextActivityDate = nextActivity ? formatDate(nextActivity.date) : '現在調整中';
   const nextActivityLabel = nextActivity ? nextActivity.title : '次回予定は準備中です';
-  const lotteryStatus = lotteryStatusLabels[content.settings.lotteryStatus];
 
   return (
     <div className="page-stack home-story-stack">
       <PhotoMarquee items={fallbackPhotoStripItems} />
 
-      <section
-        className="hero-card hero-card-enhanced hero-cinematic"
-        data-scene-step="entrance"
-      >
+      <section className="hero-card hero-card-enhanced hero-cinematic" data-scene-step="entrance">
         <div className="hero-copy">
-          <span className="chip">Cafe Bar Event</span>
+          <span className="chip">Night Cafe for VRChat</span>
           <h1>
             <span className="hero-title-line">同期のみんなでつくる、</span>
             <span className="hero-title-line">少し特別なカフェ時間。</span>
           </h1>
           <p>
             2026年3月同期会イベント部では、VRChat上でカフェ風のBarイベントを企画・運営しています。
+            静かな夜の店内を歩くように、活動予定、部員紹介、入部案内までひと続きで確認できます。
           </p>
           <div className="hero-actions">
-            <Link to="/schedule" className="primary-button">
-              次回の活動を見る
+            <Link to="/concept" className="primary-button">
+              会場の雰囲気を見る
             </Link>
-            <Link to="/lottery" className="secondary-button">
-              抽選に参加する
+            <Link to="/schedule" className="secondary-button">
+              次回の活動を見る
             </Link>
             <Link to="/join" className="secondary-button">
               入部方法を見る
@@ -120,15 +155,15 @@ export const HomePage = ({ content }: HomePageProps) => {
           <div className="hero-tags" aria-label="サイトの特徴">
             <span>
               <Coffee size={16} />
-              やわらかな照明
+              木目とアイボリーの温度感
             </span>
             <span>
               <LampDesk size={16} />
-              夜カフェ風の演出
+              夜カフェらしい柔らかな灯り
             </span>
             <span>
               <Users size={16} />
-              初参加でも入りやすい案内
+              はじめてでも迷いにくい導線
             </span>
           </div>
           <div className="hero-glance-grid" aria-label="イベント概要">
@@ -138,25 +173,25 @@ export const HomePage = ({ content }: HomePageProps) => {
               <small>{nextActivityLabel}</small>
             </article>
             <article className="hero-glance-card">
-              <span className="hero-glance-label">Lottery Status</span>
-              <strong>{lotteryStatus}</strong>
-              <small>VRC名だけで参加できる抽選フォームを公開しています。</small>
+              <span className="hero-glance-label">Open Schedule</span>
+              <strong>{publicActivityCount}件</strong>
+              <small>公開中の活動予定を、月表示カレンダーとカードで確認できます。</small>
             </article>
             <article className="hero-glance-card">
               <span className="hero-glance-label">Open Members</span>
               <strong>{publicMemberCount}名</strong>
-              <small>公開プロフィールと活動案内をスマートフォン優先で整えています。</small>
+              <small>役職や担当、好きな飲み物まで含めて紹介しています。</small>
             </article>
           </div>
         </div>
 
         <div className="hero-scene-summary hero-illustration-stack" aria-label="カフェ空間の演出紹介">
           <div className="hero-floating-chip hero-floating-chip-left">
-            <Sparkles size={14} />
+            <MoonStar size={14} />
             Entrance Scene
           </div>
           <div className="hero-floating-chip hero-floating-chip-right">
-            <Sparkles size={14} />
+            <Coffee size={14} />
             Counter Scene
           </div>
           <div className="hero-illustration-card">
@@ -171,35 +206,57 @@ export const HomePage = ({ content }: HomePageProps) => {
           </div>
           <div className="hero-scene-callout">
             <span className="eyebrow">Night Cafe Direction</span>
-            <strong>入口からカウンターへ、スクロールで店内をたどる演出</strong>
+            <strong>入口からラウンジまで、静かに奥へ進むようなスクロール体験</strong>
             <p>
-              看板の灯り、湯気、窓際の夜景、抽選箱の演出を背景の3D空間で体験しながら、各ページの情報へ進めます。
+              看板の灯り、湯気、窓際の夜景、カウンターまわりの小物を背景の3D空間で描き、
+              情報と雰囲気が自然につながる見せ方に整えています。
             </p>
           </div>
         </div>
       </section>
 
-      <section className="two-column-grid story-section-grid" data-scene-step="counter">
+      <section className="section-card manifesto-panel" data-scene-step="counter">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Design Direction</span>
+            <h2>Event Cafe をつくる3つの軸</h2>
+          </div>
+        </div>
+        <div className="manifesto-grid">
+          {manifestoCards.map(({ description, icon: Icon, title }) => (
+            <article key={title} className="info-card manifesto-card">
+              <div className="manifesto-icon">
+                <Icon size={18} />
+              </div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="two-column-grid story-section-grid">
         <NextActivityCard activity={nextActivity} />
-        <article className="detail-card">
-          <span className="eyebrow">Cafe Atmosphere</span>
-          <h2>今夜のEvent Cafe</h2>
+        <article className="detail-card detail-card-spotlight">
+          <span className="eyebrow">Tonight&apos;s Overview</span>
+          <h2>今夜の Event Cafe</h2>
           <p>{content.settings.siteDescription}</p>
-          <ul className="feature-list">
-            <li>木目とアイボリーを軸にした、親しみやすいカフェBarデザイン</li>
-            <li>スマートフォンでも見やすいカードとカレンダー中心の構成</li>
-            <li>活動予定、入部案内、抽選受付が迷わず見つかる導線</li>
-          </ul>
-          <Link to="/faq" className="inline-link">
-            よくある質問を見る <ArrowRight size={16} />
+          <div className="feature-moment-list">
+            {featureMoments.map((moment) => (
+              <article key={moment.title} className="feature-moment-card">
+                <span>{moment.title}</span>
+                <strong>{moment.value}</strong>
+                <p>{moment.description}</p>
+              </article>
+            ))}
+          </div>
+          <Link to="/concept" className="inline-link">
+            会場案内を見る <ArrowRight size={16} />
           </Link>
         </article>
       </section>
 
-      <section
-        className="section-card story-section showcase-section"
-        data-scene-step="chalkboard"
-      >
+      <section className="section-card story-section showcase-section" data-scene-step="chalkboard">
         <div className="section-heading">
           <div>
             <span className="eyebrow">Scene 3</span>
@@ -251,10 +308,7 @@ export const HomePage = ({ content }: HomePageProps) => {
         </div>
       </section>
 
-      <section
-        className="section-card story-section showcase-section"
-        data-scene-step="members"
-      >
+      <section className="section-card story-section showcase-section" data-scene-step="members">
         <div className="section-heading">
           <div>
             <span className="eyebrow">Scene 4</span>
@@ -341,52 +395,33 @@ export const HomePage = ({ content }: HomePageProps) => {
         </div>
       </section>
 
-      <section
-        className="section-card story-section showcase-section"
-        data-scene-step="lottery"
-      >
+      <section className="section-card story-section showcase-section" data-scene-step="concept">
         <div className="section-heading">
           <div>
             <span className="eyebrow">Scene 6</span>
-            <h2>抽選受付</h2>
+            <h2>会場の雰囲気を知る</h2>
           </div>
-          <Link to="/lottery" className="primary-button">
-            抽選フォームへ
+          <Link to="/concept" className="primary-button">
+            会場案内へ
           </Link>
         </div>
-        <div className="showcase-layout">
-          <figure className="showcase-figure">
-            <img
-              src={sectionArt.lottery}
-              alt="抽選受付を案内するイラスト"
-              className="showcase-illustration"
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption className="showcase-caption">Lottery Counter</figcaption>
-          </figure>
-          <div className="two-column-grid story-section-grid showcase-content">
-            <article className="detail-card">
-              <p>
-                抽選に参加する方は、VRChatで使用している名前を入力してください。登録前に確認画面が表示され、二重送信も防止されます。
-              </p>
-              <div className="warning-box">
-                <Sparkles size={18} />
-                <div>
-                  <strong>必ずVRC名を入力してください。</strong>
-                  <p>Xの名前、Discordの名前、ニックネームなどは使用しないでください。</p>
-                </div>
-              </div>
-            </article>
-            <article className="detail-card">
-              <span className="eyebrow">Current Status</span>
-              <h3>{content.settings.siteName}</h3>
-              <p>{content.settings.lotteryNotice}</p>
-              <Link to="/lottery" className="inline-link">
-                抽選に進む <ArrowRight size={16} />
-              </Link>
-            </article>
-          </div>
+        <div className="concept-preview-grid">
+          <article className="detail-card concept-preview-card">
+            <span className="eyebrow">Counter Mood</span>
+            <h3>木製カウンターを中心にした、会話のための空間</h3>
+            <p>
+              ペンダントライト、カップ、棚のボトル、窓際の夜景をまとめて見せ、
+              高級すぎず、それでいて少し特別に感じる距離感を意識しています。
+            </p>
+          </article>
+          <article className="detail-card concept-preview-card">
+            <span className="eyebrow">Site Flow</span>
+            <h3>ページ自体が、店内を歩く順路になる構成</h3>
+            <p>
+              入口のヒーローから活動予定、部員紹介、入部案内へ進み、
+              最後にFAQで安心して締められるよう体験の順番を整えています。
+            </p>
+          </article>
         </div>
       </section>
 

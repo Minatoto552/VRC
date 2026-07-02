@@ -19,7 +19,7 @@ export const sampleActivities: Activity[] = [
       '一般のお客様向けに、落ち着いた夜のカフェBarの雰囲気を体験してもらう案内イベントです。',
     meetingPoint: 'VRCワールド入口',
     targetAudience: '一般参加者',
-    notes: 'ドレスコードはありません。抽選参加の案内も当日に行います。',
+    notes: 'ドレスコードはありません。初参加の方にも分かりやすい案内を行います。',
     isPublic: true,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -110,7 +110,7 @@ export const sampleMembers: MemberProfile[] = [
 export const sampleSettings: SiteSettings = {
   siteName: '2026年3月同期会 Event Cafe',
   siteDescription:
-    'VRChat上で開催する、あたたかく親しみやすいカフェBarイベントの公開サイトです。',
+    'VRChat上で開催する、あたたかく親しみやすいカフェBarイベントの公開サイトです。会場案内から活動予定、部員紹介まで一続きで確認できます。',
   lotteryStatus: 'open',
   lotteryNotice:
     '抽選に参加する方は、VRChatで使用している名前を入力してください。個人情報は入力しないでください。',

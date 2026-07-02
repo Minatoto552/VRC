@@ -456,84 +456,157 @@ export const AdminPage = () => {
                     {filteredEntries.length === 0 ? (
                       <p className="empty-message">条件に一致する候補者はいません。</p>
                     ) : (
-                      <div className="table-scroll">
-                        <table className="admin-table">
-                          <thead>
-                            <tr>
-                              <th>通し番号</th>
-                              <th>VRC名</th>
-                              <th>登録日時</th>
-                              <th>抽選対象</th>
-                              <th>操作</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredEntries.map((entry, index) => (
-                              <tr key={entry.id}>
-                                <td>{index + 1}</td>
-                                <td className="breakable-cell">{entry.displayName}</td>
-                                <td>{formatDateTime(entry.createdAt)}</td>
-                                <td>{entry.eligible ? '対象' : '対象外'}</td>
-                                <td>
-                                  <div className="inline-actions">
-                                    <button
-                                      type="button"
-                                      className="secondary-button inline-button"
-                                      onClick={() =>
-                                        void updateLotteryEntryEligibility(entry.id, !entry.eligible)
-                                          .then(async () => {
-                                            setInfoMessage(
-                                              entry.eligible
-                                                ? '候補者を抽選対象外にしました。'
-                                                : '候補者を抽選対象に戻しました。',
-                                            );
-                                            await refreshAdminData();
-                                          })
-                                          .catch((error) => {
-                                            setErrorMessage(
-                                              error instanceof Error
-                                                ? error.message
-                                                : '更新に失敗しました。',
-                                            );
-                                          })
-                                      }
-                                    >
-                                      {entry.eligible ? '除外' : '除外解除'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="danger-button inline-button"
-                                      onClick={() => {
-                                        const confirmed = window.confirm(
-                                          `候補者「${entry.displayName}」を削除しますか？`,
+                      <>
+                        <div className="mobile-admin-list">
+                          {filteredEntries.map((entry, index) => (
+                            <article key={entry.id} className="info-card mobile-admin-card">
+                              <div className="mobile-admin-card-header">
+                                <strong>候補者 {index + 1}</strong>
+                                <span className={`status-pill ${entry.eligible ? 'status-open' : 'status-closed'}`}>
+                                  {entry.eligible ? '対象' : '対象外'}
+                                </span>
+                              </div>
+                              <dl className="stacked-details">
+                                <div>
+                                  <dt>VRC名</dt>
+                                  <dd className="breakable-cell">{entry.displayName}</dd>
+                                </div>
+                                <div>
+                                  <dt>登録日時</dt>
+                                  <dd>{formatDateTime(entry.createdAt)}</dd>
+                                </div>
+                              </dl>
+                              <div className="inline-actions">
+                                <button
+                                  type="button"
+                                  className="secondary-button inline-button"
+                                  onClick={() =>
+                                    void updateLotteryEntryEligibility(entry.id, !entry.eligible)
+                                      .then(async () => {
+                                        setInfoMessage(
+                                          entry.eligible
+                                            ? '候補者を抽選対象外にしました。'
+                                            : '候補者を抽選対象に戻しました。',
                                         );
+                                        await refreshAdminData();
+                                      })
+                                      .catch((error) => {
+                                        setErrorMessage(
+                                          error instanceof Error ? error.message : '更新に失敗しました。',
+                                        );
+                                      })
+                                  }
+                                >
+                                  {entry.eligible ? '除外' : '除外解除'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="danger-button inline-button"
+                                  onClick={() => {
+                                    const confirmed = window.confirm(
+                                      `候補者「${entry.displayName}」を削除しますか？`,
+                                    );
 
-                                        if (confirmed) {
-                                          void deleteLotteryEntry(entry.id)
+                                    if (confirmed) {
+                                      void deleteLotteryEntry(entry.id)
+                                        .then(async () => {
+                                          setInfoMessage('候補者を削除しました。');
+                                          await refreshAdminData();
+                                        })
+                                        .catch((error) => {
+                                          setErrorMessage(
+                                            error instanceof Error ? error.message : '削除に失敗しました。',
+                                          );
+                                        });
+                                    }
+                                  }}
+                                >
+                                  削除
+                                </button>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+
+                        <div className="table-scroll desktop-admin-table">
+                          <table className="admin-table">
+                            <thead>
+                              <tr>
+                                <th>通し番号</th>
+                                <th>VRC名</th>
+                                <th>登録日時</th>
+                                <th>抽選対象</th>
+                                <th>操作</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredEntries.map((entry, index) => (
+                                <tr key={entry.id}>
+                                  <td>{index + 1}</td>
+                                  <td className="breakable-cell">{entry.displayName}</td>
+                                  <td>{formatDateTime(entry.createdAt)}</td>
+                                  <td>{entry.eligible ? '対象' : '対象外'}</td>
+                                  <td>
+                                    <div className="inline-actions">
+                                      <button
+                                        type="button"
+                                        className="secondary-button inline-button"
+                                        onClick={() =>
+                                          void updateLotteryEntryEligibility(entry.id, !entry.eligible)
                                             .then(async () => {
-                                              setInfoMessage('候補者を削除しました。');
+                                              setInfoMessage(
+                                                entry.eligible
+                                                  ? '候補者を抽選対象外にしました。'
+                                                  : '候補者を抽選対象に戻しました。',
+                                              );
                                               await refreshAdminData();
                                             })
                                             .catch((error) => {
                                               setErrorMessage(
                                                 error instanceof Error
                                                   ? error.message
-                                                  : '削除に失敗しました。',
+                                                  : '更新に失敗しました。',
                                               );
-                                            });
+                                            })
                                         }
-                                      }}
-                                    >
-                                      削除
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                                      >
+                                        {entry.eligible ? '除外' : '除外解除'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="danger-button inline-button"
+                                        onClick={() => {
+                                          const confirmed = window.confirm(
+                                            `候補者「${entry.displayName}」を削除しますか？`,
+                                          );
+
+                                          if (confirmed) {
+                                            void deleteLotteryEntry(entry.id)
+                                              .then(async () => {
+                                                setInfoMessage('候補者を削除しました。');
+                                                await refreshAdminData();
+                                              })
+                                              .catch((error) => {
+                                                setErrorMessage(
+                                                  error instanceof Error
+                                                    ? error.message
+                                                    : '削除に失敗しました。',
+                                                );
+                                              });
+                                          }
+                                        }}
+                                      >
+                                        削除
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                    </>
+                  )}
                   </div>
                 </div>
               ) : null}
@@ -647,62 +720,121 @@ export const AdminPage = () => {
                     {adminData.draws.length === 0 ? (
                       <p className="empty-message">抽選履歴はまだありません。</p>
                     ) : (
-                      <div className="table-scroll">
-                        <table className="admin-table">
-                          <thead>
-                            <tr>
-                              <th>抽選日時</th>
-                              <th>当選者</th>
-                              <th>当選人数</th>
-                              <th>候補者数</th>
-                              <th>実行者</th>
-                              <th>備考</th>
-                              <th>操作</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {adminData.draws.map((draw) => (
-                              <tr key={draw.id}>
-                                <td>{formatDateTime(draw.createdAt)}</td>
-                                <td className="breakable-cell">{draw.winners.join(' / ')}</td>
-                                <td>{draw.winnerCount}</td>
-                                <td>{draw.candidateCount}</td>
-                                <td>{draw.executedBy}</td>
-                                <td className="breakable-cell">{draw.notes || '記録なし'}</td>
-                                <td>
-                                  <button
-                                    type="button"
-                                    className="danger-button inline-button"
-                                    onClick={() => {
-                                      const confirmed = window.confirm(
-                                        `抽選履歴を削除しますか？\n対象: ${draw.winners.join(' / ')}`,
-                                      );
+                      <>
+                        <div className="mobile-admin-list">
+                          {adminData.draws.map((draw) => (
+                            <article key={draw.id} className="info-card mobile-admin-card">
+                              <div className="mobile-admin-card-header">
+                                <strong>{formatDateTime(draw.createdAt)}</strong>
+                                <span className="status-pill">{draw.winnerCount}名</span>
+                              </div>
+                              <dl className="stacked-details">
+                                <div>
+                                  <dt>当選者</dt>
+                                  <dd className="breakable-cell">{draw.winners.join(' / ')}</dd>
+                                </div>
+                                <div>
+                                  <dt>候補者数</dt>
+                                  <dd>{draw.candidateCount}</dd>
+                                </div>
+                                <div>
+                                  <dt>実行者</dt>
+                                  <dd>{draw.executedBy}</dd>
+                                </div>
+                                <div>
+                                  <dt>備考</dt>
+                                  <dd className="breakable-cell">{draw.notes || '記録なし'}</dd>
+                                </div>
+                              </dl>
+                              <div className="inline-actions">
+                                <button
+                                  type="button"
+                                  className="danger-button inline-button"
+                                  onClick={() => {
+                                    const confirmed = window.confirm(
+                                      `抽選履歴を削除しますか？\n対象: ${draw.winners.join(' / ')}`,
+                                    );
 
-                                      if (confirmed) {
-                                        void deleteLotteryDraw(draw.id)
-                                          .then(async () => {
-                                            setInfoMessage('抽選履歴を削除しました。');
-                                            await refreshAdminData();
-                                          })
-                                          .catch((error) => {
-                                            setErrorMessage(
-                                              error instanceof Error
-                                                ? error.message
-                                                : '履歴削除に失敗しました。',
-                                            );
-                                          });
-                                      }
-                                    }}
-                                  >
-                                    削除
-                                  </button>
-                                </td>
+                                    if (confirmed) {
+                                      void deleteLotteryDraw(draw.id)
+                                        .then(async () => {
+                                          setInfoMessage('抽選履歴を削除しました。');
+                                          await refreshAdminData();
+                                        })
+                                        .catch((error) => {
+                                          setErrorMessage(
+                                            error instanceof Error
+                                              ? error.message
+                                              : '履歴削除に失敗しました。',
+                                          );
+                                        });
+                                    }
+                                  }}
+                                >
+                                  削除
+                                </button>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+
+                        <div className="table-scroll desktop-admin-table">
+                          <table className="admin-table">
+                            <thead>
+                              <tr>
+                                <th>抽選日時</th>
+                                <th>当選者</th>
+                                <th>当選人数</th>
+                                <th>候補者数</th>
+                                <th>実行者</th>
+                                <th>備考</th>
+                                <th>操作</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                            </thead>
+                            <tbody>
+                              {adminData.draws.map((draw) => (
+                                <tr key={draw.id}>
+                                  <td>{formatDateTime(draw.createdAt)}</td>
+                                  <td className="breakable-cell">{draw.winners.join(' / ')}</td>
+                                  <td>{draw.winnerCount}</td>
+                                  <td>{draw.candidateCount}</td>
+                                  <td>{draw.executedBy}</td>
+                                  <td className="breakable-cell">{draw.notes || '記録なし'}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="danger-button inline-button"
+                                      onClick={() => {
+                                        const confirmed = window.confirm(
+                                          `抽選履歴を削除しますか？\n対象: ${draw.winners.join(' / ')}`,
+                                        );
+
+                                        if (confirmed) {
+                                          void deleteLotteryDraw(draw.id)
+                                            .then(async () => {
+                                              setInfoMessage('抽選履歴を削除しました。');
+                                              await refreshAdminData();
+                                            })
+                                            .catch((error) => {
+                                              setErrorMessage(
+                                                error instanceof Error
+                                                  ? error.message
+                                                  : '履歴削除に失敗しました。',
+                                              );
+                                            });
+                                        }
+                                      }}
+                                    >
+                                      削除
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                    </>
+                  )}
                   </article>
                 </div>
               ) : null}

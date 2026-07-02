@@ -10,6 +10,7 @@ import {
   findNextActivity,
   formatDate,
   formatTimeRange,
+  lotteryStatusLabels,
 } from '../lib/format';
 import { fallbackPhotoStripItems } from '../lib/photo-strip';
 
@@ -83,6 +84,10 @@ export const HomePage = ({ content }: HomePageProps) => {
   const nextActivity = findNextActivity(content.activities);
   const previewActivities = content.activities.slice(0, 3);
   const previewMembers = content.members.slice(0, 3);
+  const publicMemberCount = content.members.length;
+  const nextActivityDate = nextActivity ? formatDate(nextActivity.date) : '現在調整中';
+  const nextActivityLabel = nextActivity ? nextActivity.title : '次回予定は準備中です';
+  const lotteryStatus = lotteryStatusLabels[content.settings.lotteryStatus];
 
   return (
     <div className="page-stack home-story-stack">
@@ -125,6 +130,23 @@ export const HomePage = ({ content }: HomePageProps) => {
               <Users size={16} />
               初参加でも入りやすい案内
             </span>
+          </div>
+          <div className="hero-glance-grid" aria-label="イベント概要">
+            <article className="hero-glance-card">
+              <span className="hero-glance-label">Next Event</span>
+              <strong>{nextActivityDate}</strong>
+              <small>{nextActivityLabel}</small>
+            </article>
+            <article className="hero-glance-card">
+              <span className="hero-glance-label">Lottery Status</span>
+              <strong>{lotteryStatus}</strong>
+              <small>VRC名だけで参加できる抽選フォームを公開しています。</small>
+            </article>
+            <article className="hero-glance-card">
+              <span className="hero-glance-label">Open Members</span>
+              <strong>{publicMemberCount}名</strong>
+              <small>公開プロフィールと活動案内をスマートフォン優先で整えています。</small>
+            </article>
           </div>
         </div>
 

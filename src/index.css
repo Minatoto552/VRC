@@ -217,6 +217,10 @@ main {
   isolation: isolate;
 }
 
+.site-header.is-admin-header {
+  align-items: center;
+}
+
 .brand-mark {
   display: inline-flex;
   align-items: center;
@@ -250,6 +254,11 @@ main {
   padding: 0.7rem 0.95rem;
   position: relative;
   z-index: 7;
+}
+
+.header-home-link {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .site-navigation {
@@ -2497,6 +2506,11 @@ main {
 
   .menu-toggle span {
     display: inline;
+  }
+
+  .header-home-link {
+    width: 100%;
+    justify-content: center;
   }
 
   .site-panel {

@@ -44,39 +44,47 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
           </Suspense>
         ) : null}
 
-        <header className="site-header">
+        <header className={`site-header ${isAdminRoute ? 'is-admin-header' : ''}`}>
           <NavLink to="/" className="brand-mark" onClick={() => setMenuOpen(false)}>
             <Sparkles size={18} />
             <span>{content.settings.siteName}</span>
           </NavLink>
 
-          <button
-            type="button"
-            className="menu-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="site-navigation"
-            onClick={() => setMenuOpen((current) => !current)}
-          >
-            <Menu size={18} />
-            <span>メニュー</span>
-          </button>
-
-          <nav
-            id="site-navigation"
-            className={`site-navigation ${menuOpen ? 'is-open' : ''}`}
-            aria-label="主要ナビゲーション"
-          >
-            {navigationItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}
-                onClick={() => setMenuOpen(false)}
+          {isAdminRoute ? (
+            <NavLink to="/" className="secondary-button inline-button header-home-link">
+              公開サイトへ戻る
+            </NavLink>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="menu-toggle"
+                aria-expanded={menuOpen}
+                aria-controls="site-navigation"
+                onClick={() => setMenuOpen((current) => !current)}
               >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+                <Menu size={18} />
+                <span>メニュー</span>
+              </button>
+
+              <nav
+                id="site-navigation"
+                className={`site-navigation ${menuOpen ? 'is-open' : ''}`}
+                aria-label="主要ナビゲーション"
+              >
+                {navigationItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </>
+          )}
         </header>
 
         {loading ? (

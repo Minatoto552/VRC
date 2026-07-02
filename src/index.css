@@ -2024,11 +2024,23 @@ main {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, rgba(255, 236, 204, 0.36), transparent 28%),
+    linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(244, 233, 217, 0.94));
+}
+
+.metric-card span {
+  color: var(--ink-soft);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .metric-card strong {
   font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
   font-size: 2.2rem;
+  color: var(--accent-dark);
+  text-shadow: 0 10px 24px rgba(132, 73, 42, 0.12);
 }
 
 .full-span {

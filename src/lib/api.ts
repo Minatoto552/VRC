@@ -1,4 +1,3 @@
-import { httpsCallable } from 'firebase/functions';
 import {
   browserSessionPersistence,
   setPersistence,
@@ -6,7 +5,7 @@ import {
   signOut,
   type Auth,
 } from 'firebase/auth';
-import type { Functions } from 'firebase/functions';
+import { httpsCallable, type Functions } from 'firebase/functions';
 
 import type {
   Activity,
@@ -16,21 +15,26 @@ import type {
   PublicContent,
   SiteSettings,
 } from '../../shared/models';
-import { sampleActivities, sampleMembers, samplePublicContent, sampleSettings } from './sample-data';
 import { firebaseServices, runtimeMode } from './firebase';
+import { sampleActivities, sampleMembers, samplePublicContent, sampleSettings } from './sample-data';
 
 interface FirebaseRuntime {
   auth: Auth;
   functions: Functions;
 }
 
-const FIREBASE_READ_TIMEOUT_MS = 7000;
-const FIREBASE_WRITE_TIMEOUT_MS = 12000;
+const FIREBASE_READ_TIMEOUT_MS = runtimeMode === 'emulator' ? 15000 : 7000;
+const FIREBASE_WRITE_TIMEOUT_MS = runtimeMode === 'emulator' ? 18000 : 12000;
 
 const buildConnectionMessage = (actionLabel: string): string =>
   runtimeMode === 'emulator'
     ? `Firebase Emulator に接続できませんでした。${actionLabel}を続けるには \`npm run emulators\` を起動してください。`
     : `Firebase に接続できませんでした。${actionLabel}を続けるには Firebase の設定を確認してください。`;
+
+const wait = (timeoutMs: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, timeoutMs);
+  });
 
 const withTimeout = async <T>(
   promise: Promise<T>,
@@ -57,9 +61,32 @@ const withTimeout = async <T>(
   }
 };
 
+const withRetry = async <T>(
+  factory: () => Promise<T>,
+  timeoutMs: number,
+  actionLabel: string,
+  attempts = runtimeMode === 'emulator' ? 2 : 1,
+): Promise<T> => {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await withTimeout(factory(), timeoutMs, actionLabel);
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < attempts - 1) {
+        await wait(900);
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(buildConnectionMessage(actionLabel));
+};
+
 const ensureFirebase = (): FirebaseRuntime => {
   if (!firebaseServices.auth || !firebaseServices.functions) {
-    throw new Error('Firebase の設定が見つかりません。.env.local の内容を確認してください。');
+    throw new Error('Firebase の設定が見つかりません。.env.local の設定を確認してください。');
   }
 
   return { auth: firebaseServices.auth, functions: firebaseServices.functions };
@@ -81,7 +108,11 @@ export const loadPublicContent = async (): Promise<PublicContent> => {
 
   const { functions } = ensureFirebase();
   const callable = httpsCallable<undefined, PublicContent>(functions, 'getPublicContent');
-  const result = await withTimeout(callable(), FIREBASE_READ_TIMEOUT_MS, '公開データの読み込み');
+  const result = await withRetry(
+    () => callable(),
+    FIREBASE_READ_TIMEOUT_MS,
+    '公開データの読み込み',
+  );
 
   return runtimeMode === 'emulator' ? mergeEmulatorPublicContent(result.data) : result.data;
 };
@@ -101,7 +132,11 @@ export const loadAdminContent = async (): Promise<AdminContent> => {
 
   const { functions } = ensureFirebase();
   const callable = httpsCallable<undefined, AdminContent>(functions, 'getAdminContent');
-  const result = await withTimeout(callable(), FIREBASE_READ_TIMEOUT_MS, '管理データの読み込み');
+  const result = await withRetry(
+    () => callable(),
+    FIREBASE_READ_TIMEOUT_MS,
+    '管理データの読み込み',
+  );
   return result.data;
 };
 
@@ -116,7 +151,11 @@ export const submitLotteryEntry = async (displayName: string): Promise<void> => 
     functions,
     'submitLotteryEntry',
   );
-  await withTimeout(callable({ displayName }), FIREBASE_WRITE_TIMEOUT_MS, '抽選受付');
+  await withRetry(
+    () => callable({ displayName }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '抽選受付',
+  );
 };
 
 export const loginAsAdmin = async (password: string): Promise<void> => {
@@ -125,7 +164,11 @@ export const loginAsAdmin = async (password: string): Promise<void> => {
     functions,
     'adminLogin',
   );
-  const result = await withTimeout(callable({ password }), FIREBASE_WRITE_TIMEOUT_MS, '管理者ログイン');
+  const result = await withRetry(
+    () => callable({ password }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '管理者ログイン',
+  );
   await setPersistence(auth, browserSessionPersistence);
   await signInWithCustomToken(auth, result.data.customToken);
 };
@@ -138,7 +181,11 @@ export const logoutAdmin = async (): Promise<void> => {
 export const runLottery = async (winnerCount: number): Promise<LotteryDraw> => {
   const { functions } = ensureFirebase();
   const callable = httpsCallable<{ winnerCount: number }, LotteryDraw>(functions, 'runLottery');
-  const result = await withTimeout(callable({ winnerCount }), FIREBASE_WRITE_TIMEOUT_MS, '抽選実行');
+  const result = await withRetry(
+    () => callable({ winnerCount }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '抽選実行',
+  );
 
   return result.data;
 };
@@ -146,7 +193,11 @@ export const runLottery = async (winnerCount: number): Promise<LotteryDraw> => {
 export const resetLotteryEntries = async (): Promise<void> => {
   const { functions } = ensureFirebase();
   const callable = httpsCallable(functions, 'resetLotteryEntries');
-  await withTimeout(callable(), FIREBASE_WRITE_TIMEOUT_MS, '候補者一覧の全削除');
+  await withRetry(
+    () => callable(),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '候補者一覧の全削除',
+  );
 };
 
 export const updateLotteryEntryEligibility = async (
@@ -158,8 +209,8 @@ export const updateLotteryEntryEligibility = async (
     functions,
     'updateLotteryEntryEligibility',
   );
-  await withTimeout(
-    callable({ entryId, eligible }),
+  await withRetry(
+    () => callable({ entryId, eligible }),
     FIREBASE_WRITE_TIMEOUT_MS,
     '抽選対象の切り替え',
   );
@@ -171,7 +222,11 @@ export const deleteLotteryEntry = async (entryId: string): Promise<void> => {
     functions,
     'deleteLotteryEntry',
   );
-  await withTimeout(callable({ entryId }), FIREBASE_WRITE_TIMEOUT_MS, '候補者削除');
+  await withRetry(
+    () => callable({ entryId }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '候補者の削除',
+  );
 };
 
 export const deleteLotteryDraw = async (drawId: string): Promise<void> => {
@@ -180,7 +235,11 @@ export const deleteLotteryDraw = async (drawId: string): Promise<void> => {
     functions,
     'deleteLotteryDraw',
   );
-  await withTimeout(callable({ drawId }), FIREBASE_WRITE_TIMEOUT_MS, '抽選履歴の削除');
+  await withRetry(
+    () => callable({ drawId }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '抽選履歴の削除',
+  );
 };
 
 export const upsertActivity = async (activity: Activity): Promise<void> => {
@@ -189,7 +248,11 @@ export const upsertActivity = async (activity: Activity): Promise<void> => {
     functions,
     'upsertActivity',
   );
-  await withTimeout(callable({ activity }), FIREBASE_WRITE_TIMEOUT_MS, '活動予定の保存');
+  await withRetry(
+    () => callable({ activity }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '活動予定の保存',
+  );
 };
 
 export const deleteActivity = async (activityId: string): Promise<void> => {
@@ -198,7 +261,11 @@ export const deleteActivity = async (activityId: string): Promise<void> => {
     functions,
     'deleteActivity',
   );
-  await withTimeout(callable({ activityId }), FIREBASE_WRITE_TIMEOUT_MS, '活動予定の削除');
+  await withRetry(
+    () => callable({ activityId }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '活動予定の削除',
+  );
 };
 
 export const upsertMember = async (member: MemberProfile): Promise<void> => {
@@ -207,7 +274,11 @@ export const upsertMember = async (member: MemberProfile): Promise<void> => {
     functions,
     'upsertMember',
   );
-  await withTimeout(callable({ member }), FIREBASE_WRITE_TIMEOUT_MS, '部員情報の保存');
+  await withRetry(
+    () => callable({ member }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '部員情報の保存',
+  );
 };
 
 export const deleteMember = async (memberId: string): Promise<void> => {
@@ -216,7 +287,11 @@ export const deleteMember = async (memberId: string): Promise<void> => {
     functions,
     'deleteMember',
   );
-  await withTimeout(callable({ memberId }), FIREBASE_WRITE_TIMEOUT_MS, '部員情報の削除');
+  await withRetry(
+    () => callable({ memberId }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    '部員情報の削除',
+  );
 };
 
 export const updateSiteSettings = async (settings: SiteSettings): Promise<void> => {
@@ -225,5 +300,9 @@ export const updateSiteSettings = async (settings: SiteSettings): Promise<void> 
     functions,
     'updateSiteSettings',
   );
-  await withTimeout(callable({ settings }), FIREBASE_WRITE_TIMEOUT_MS, 'サイト設定の保存');
+  await withRetry(
+    () => callable({ settings }),
+    FIREBASE_WRITE_TIMEOUT_MS,
+    'サイト設定の保存',
+  );
 };

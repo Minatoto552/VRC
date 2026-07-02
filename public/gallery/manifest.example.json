@@ -1,0 +1,16 @@
+[
+  {
+    "src": "counter-night.jpg",
+    "alt": "イベント当日のカウンター写真",
+    "caption": "Counter Light",
+    "note": "カウンターや接客風景の写真に向いています",
+    "tone": "counter"
+  },
+  {
+    "src": "window-view.jpg",
+    "alt": "店内から見た夜景の写真",
+    "caption": "Window Mood",
+    "note": "窓際や雰囲気カットを横長で見せられます",
+    "tone": "window"
+  }
+]

@@ -11,7 +11,7 @@ import {
   formatDate,
   formatTimeRange,
 } from '../lib/format';
-import { photoStripItems } from '../lib/photo-strip';
+import { fallbackPhotoStripItems } from '../lib/photo-strip';
 
 interface HomePageProps {
   content: PublicContent;
@@ -86,7 +86,7 @@ export const HomePage = ({ content }: HomePageProps) => {
 
   return (
     <div className="page-stack home-story-stack">
-      <PhotoMarquee items={photoStripItems} />
+      <PhotoMarquee items={fallbackPhotoStripItems} />
 
       <section
         className="hero-card hero-card-enhanced hero-cinematic"

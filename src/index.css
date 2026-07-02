@@ -46,10 +46,12 @@ body,
 #root {
   min-height: 100%;
   margin: 0;
+  overflow-x: clip;
 }
 
 body {
   min-width: 320px;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 10% 10%, rgba(231, 162, 82, 0.1), transparent 20%),
     linear-gradient(180deg, #050c12 0%, #151117 100%);
@@ -93,6 +95,7 @@ img {
   margin: 0 auto;
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
 }
 
 .site-shell::before,

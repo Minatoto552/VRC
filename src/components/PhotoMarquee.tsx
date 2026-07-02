@@ -1,13 +1,35 @@
+import { useEffect, useState } from 'react';
 import { Camera } from 'lucide-react';
 
 import type { PhotoStripItem } from '../lib/photo-strip';
+import { fallbackPhotoStripItems, loadPhotoStripItems } from '../lib/photo-strip';
 
 interface PhotoMarqueeProps {
   items: PhotoStripItem[];
 }
 
 export const PhotoMarquee = ({ items }: PhotoMarqueeProps) => {
-  const loopItems = items.length > 0 ? [...items, ...items] : [];
+  const [resolvedItems, setResolvedItems] = useState<PhotoStripItem[]>(
+    items.length > 0 ? items : fallbackPhotoStripItems,
+  );
+
+  useEffect(() => {
+    setResolvedItems(items.length > 0 ? items : fallbackPhotoStripItems);
+
+    let cancelled = false;
+
+    void loadPhotoStripItems().then((nextItems) => {
+      if (!cancelled) {
+        setResolvedItems(nextItems);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
+
+  const loopItems = resolvedItems.length > 0 ? [...resolvedItems, ...resolvedItems] : [];
 
   return (
     <section className="section-card photo-marquee-shell" aria-label="イベント写真スライド">
@@ -25,7 +47,7 @@ export const PhotoMarquee = ({ items }: PhotoMarqueeProps) => {
             <article
               key={`${item.caption}-${index}`}
               className={`photo-marquee-card photo-tone-${item.tone} ${item.src ? 'has-image' : 'is-placeholder'}`}
-              aria-hidden={index >= items.length}
+              aria-hidden={index >= resolvedItems.length}
             >
               {item.src ? (
                 <img src={item.src} alt={item.alt} loading="lazy" decoding="async" />

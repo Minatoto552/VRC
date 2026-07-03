@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 
 import type { PublicContent } from '../shared/models';
 import { SiteLayout } from './components/SiteLayout';
@@ -24,20 +24,24 @@ const App = () => {
 
     void loadPublicContent()
       .then((nextContent) => {
-        if (mounted) {
-          setContent(nextContent);
-          setRuntimeNotice(null);
+        if (!mounted) {
+          return;
         }
+
+        setContent(nextContent);
+        setRuntimeNotice(null);
       })
       .catch((error) => {
-        if (mounted) {
-          setContent(samplePublicContent);
-          setRuntimeNotice(
-            error instanceof Error
-              ? `${error.message} 公開ページはサンプル表示へ切り替えました。`
-              : '公開データの読み込みに失敗したため、サンプル表示へ切り替えました。',
-          );
+        if (!mounted) {
+          return;
         }
+
+        setContent(samplePublicContent);
+        setRuntimeNotice(
+          error instanceof Error
+            ? `${error.message} 公開ページはサンプル表示へ切り替えました。`
+            : '公開データの読み込みに失敗したため、サンプル表示へ切り替えました。',
+        );
       })
       .finally(() => {
         if (mounted) {
@@ -185,7 +189,6 @@ const App = () => {
         <Route path="/schedule" element={<SchedulePage activities={content.activities} />} />
         <Route path="/members" element={<MembersPage members={content.members} />} />
         <Route path="/join" element={<JoinPage guideNote={content.settings.joinGuideNote} />} />
-        <Route path="/lottery" element={<Navigate to="/concept" replace />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>

@@ -1,50 +1,46 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import type { Activity, LotteryDraw, MemberProfile, SiteSettings } from '../../shared/models';
+import type { Activity, MemberProfile, SiteSettings } from '../../shared/models';
 import { AdminGuard } from '../components/AdminGuard';
+import { useAuth } from '../auth/AuthContext';
 import { buildAvatarImage } from '../lib/avatar';
 import {
   deleteActivity,
-  deleteLotteryDraw,
-  deleteLotteryEntry,
   deleteMember,
   loadAdminContent,
   loginAsAdmin,
   logoutAdmin,
-  resetLotteryEntries,
-  runLottery,
-  updateLotteryEntryEligibility,
   updateSiteSettings,
   upsertActivity,
   upsertMember,
 } from '../lib/api';
-import { activityKindLabels, formatDateTime, lotteryStatusLabels } from '../lib/format';
-import { useAuth } from '../auth/AuthContext';
 
-const adminTabs = [
-  'dashboard',
-  'entries',
-  'lottery',
-  'activities',
-  'members',
-  'settings',
-] as const;
-
-const quickWinnerCounts = [1, 2, 3] as const;
+const adminTabs = ['dashboard', 'activities', 'members', 'settings'] as const;
 
 type AdminTab = (typeof adminTabs)[number];
-type EntrySort = 'newest' | 'oldest';
 type AdminContent = Awaited<ReturnType<typeof loadAdminContent>>;
 
-interface LotteryPresentationState {
-  phase: 'idle' | 'revealing' | 'revealed';
-  draw: LotteryDraw | null;
-  previewNames: string[];
-}
+const activityKindOptions = [
+  { value: 'public-event', label: 'お客様向けイベント' },
+  { value: 'member-meeting', label: '部員向けミーティング' },
+  { value: 'briefing', label: '説明会' },
+  { value: 'interview', label: '入部面接' },
+  { value: 'rehearsal', label: 'リハーサル' },
+  { value: 'other', label: 'その他' },
+] as const;
+
+const formatDateTime = (value: string): string =>
+  new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
 
 const nowIso = (): string => new Date().toISOString();
 
-const blankActivity = (): Activity => ({
+const createBlankActivity = (): Activity => ({
   id: `activity-${crypto.randomUUID()}`,
   title: '',
   kind: 'public-event',
@@ -60,7 +56,7 @@ const blankActivity = (): Activity => ({
   updatedAt: nowIso(),
 });
 
-const blankMember = (): MemberProfile => ({
+const createBlankMember = (): MemberProfile => ({
   id: `member-${crypto.randomUUID()}`,
   vrcName: '',
   avatarLabel: '00',
@@ -77,20 +73,8 @@ const blankMember = (): MemberProfile => ({
   updatedAt: nowIso(),
 });
 
-const buildPreviewNames = (
-  eligibleNames: string[],
-  winnerCount: number,
-  shift: number,
-): string[] => {
-  if (eligibleNames.length === 0) {
-    return [];
-  }
-
-  return Array.from({ length: winnerCount }, (_, index) => {
-    const name = eligibleNames[(shift + index) % eligibleNames.length];
-    return name ?? eligibleNames[0] ?? '候補者';
-  }).filter((name): name is string => Boolean(name));
-};
+const getAvatarSrc = (member: MemberProfile): string =>
+  member.avatarImageUrl || buildAvatarImage(member.avatarLabel, member.vrcName);
 
 export const AdminPage = () => {
   const { authReady, isAdminSignedIn, runtimeMode } = useAuth();
@@ -99,34 +83,11 @@ export const AdminPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [runningLottery, setRunningLottery] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [entrySort, setEntrySort] = useState<EntrySort>('newest');
-  const deferredSearchText = useDeferredValue(searchText);
-  const [winnerCount, setWinnerCount] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [adminData, setAdminData] = useState<AdminContent | null>(null);
-  const [activityDraft, setActivityDraft] = useState<Activity>(blankActivity());
-  const [memberDraft, setMemberDraft] = useState<MemberProfile>(blankMember());
+  const [activityDraft, setActivityDraft] = useState<Activity>(createBlankActivity());
+  const [memberDraft, setMemberDraft] = useState<MemberProfile>(createBlankMember());
   const [settingsDraft, setSettingsDraft] = useState<SiteSettings | null>(null);
-  const [presentation, setPresentation] = useState<LotteryPresentationState>({
-    phase: 'idle',
-    draw: null,
-    previewNames: [],
-  });
-  const revealTimeoutRef = useRef<number | null>(null);
-  const revealIntervalRef = useRef<number | null>(null);
-
-  const clearPresentationTimers = () => {
-    if (revealTimeoutRef.current !== null) {
-      window.clearTimeout(revealTimeoutRef.current);
-      revealTimeoutRef.current = null;
-    }
-
-    if (revealIntervalRef.current !== null) {
-      window.clearInterval(revealIntervalRef.current);
-      revealIntervalRef.current = null;
-    }
-  };
 
   const refreshAdminData = async () => {
     const data = await loadAdminContent();
@@ -135,81 +96,39 @@ export const AdminPage = () => {
   };
 
   useEffect(() => {
-    if (isAdminSignedIn) {
-      void refreshAdminData().catch((error) => {
-        setErrorMessage(error instanceof Error ? error.message : '管理データの取得に失敗しました。');
-      });
-    }
-  }, [isAdminSignedIn]);
-
-  useEffect(() => () => clearPresentationTimers(), []);
-
-  const eligibleEntries = useMemo(
-    () => adminData?.entries.filter((entry) => entry.eligible) ?? [],
-    [adminData],
-  );
-
-  const filteredEntries = useMemo(() => {
-    if (!adminData) {
-      return [];
-    }
-
-    const normalizedSearch = deferredSearchText.toLocaleLowerCase('ja-JP');
-    const matchingEntries = adminData.entries.filter((entry) =>
-      entry.displayName.toLocaleLowerCase('ja-JP').includes(normalizedSearch),
-    );
-
-    return matchingEntries.toSorted((left, right) =>
-      entrySort === 'newest'
-        ? right.createdAt.localeCompare(left.createdAt)
-        : left.createdAt.localeCompare(right.createdAt),
-    );
-  }, [adminData, deferredSearchText, entrySort]);
-
-  const finalizePresentation = (draw: LotteryDraw | null) => {
-    if (!draw) {
-      clearPresentationTimers();
-      setPresentation({ phase: 'idle', draw: null, previewNames: [] });
+    if (!isAdminSignedIn) {
+      setAdminData(null);
       return;
     }
 
-    clearPresentationTimers();
-    setPresentation({
-      phase: 'revealed',
-      draw,
-      previewNames: draw.winners,
-    });
-    setInfoMessage('当選結果を表示しました。');
     void refreshAdminData().catch((error) => {
-      setErrorMessage(error instanceof Error ? error.message : '抽選結果の更新に失敗しました。');
+      setErrorMessage(error instanceof Error ? error.message : '管理データの取得に失敗しました。');
     });
+  }, [isAdminSignedIn]);
+
+  const activityCount = adminData?.activities.length ?? 0;
+  const publicActivityCount = adminData?.activities.filter((activity) => activity.isPublic).length ?? 0;
+  const memberCount = adminData?.members.length ?? 0;
+  const publicMemberCount = adminData?.members.filter((member) => member.isPublic).length ?? 0;
+
+  const sortedMembers = useMemo(
+    () =>
+      [...(adminData?.members ?? [])].sort((left, right) =>
+        left.sortOrder === right.sortOrder
+          ? left.createdAt.localeCompare(right.createdAt)
+          : left.sortOrder - right.sortOrder,
+      ),
+    [adminData?.members],
+  );
+
+  const recentAudits = useMemo(() => adminData?.audits.slice(0, 8) ?? [], [adminData?.audits]);
+
+  const resetActivityDraft = () => {
+    setActivityDraft(createBlankActivity());
   };
 
-  const startPresentation = (draw: LotteryDraw, eligibleNames: string[]) => {
-    clearPresentationTimers();
-    let shift = 0;
-
-    setPresentation({
-      phase: 'revealing',
-      draw,
-      previewNames: buildPreviewNames(eligibleNames, draw.winnerCount, shift),
-    });
-
-    revealIntervalRef.current = window.setInterval(() => {
-      shift += 1;
-      setPresentation((current) =>
-        current.draw
-          ? {
-              ...current,
-              previewNames: buildPreviewNames(eligibleNames, draw.winnerCount, shift),
-            }
-          : current,
-      );
-    }, 220);
-
-    revealTimeoutRef.current = window.setTimeout(() => {
-      finalizePresentation(draw);
-    }, 3000);
+  const resetMemberDraft = () => {
+    setMemberDraft(createBlankMember());
   };
 
   const handleLogin = async () => {
@@ -228,28 +147,114 @@ export const AdminPage = () => {
     }
   };
 
-  const handleRunLottery = async () => {
-    if (!adminData || eligibleEntries.length === 0) {
-      setErrorMessage('抽選対象者がいません。');
+  const handleSaveActivity = async () => {
+    setSaving(true);
+    setErrorMessage('');
+    setInfoMessage('');
+
+    try {
+      await upsertActivity({
+        ...activityDraft,
+        updatedAt: nowIso(),
+      });
+      await refreshAdminData();
+      resetActivityDraft();
+      setInfoMessage('活動予定を保存しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '活動予定の保存に失敗しました。');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    const confirmed = window.confirm('この活動予定を削除しますか？');
+    if (!confirmed) {
       return;
     }
 
-    setRunningLottery(true);
+    setSaving(true);
     setErrorMessage('');
-    setInfoMessage('抽選演出を準備しています…');
-    setPresentation({ phase: 'idle', draw: null, previewNames: [] });
+    setInfoMessage('');
 
     try {
-      const draw = await runLottery(winnerCount);
-      startPresentation(
-        draw,
-        eligibleEntries.map((entry) => entry.displayName),
-      );
+      await deleteActivity(activityId);
+      await refreshAdminData();
+      if (activityDraft.id === activityId) {
+        resetActivityDraft();
+      }
+      setInfoMessage('活動予定を削除しました。');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '抽選に失敗しました。');
-      setInfoMessage('');
+      setErrorMessage(error instanceof Error ? error.message : '活動予定の削除に失敗しました。');
     } finally {
-      setRunningLottery(false);
+      setSaving(false);
+    }
+  };
+
+  const handleSaveMember = async () => {
+    setSaving(true);
+    setErrorMessage('');
+    setInfoMessage('');
+
+    try {
+      await upsertMember({
+        ...memberDraft,
+        updatedAt: nowIso(),
+      });
+      await refreshAdminData();
+      resetMemberDraft();
+      setInfoMessage('部員情報を保存しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '部員情報の保存に失敗しました。');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    const confirmed = window.confirm('この部員情報を削除しますか？');
+    if (!confirmed) {
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage('');
+    setInfoMessage('');
+
+    try {
+      await deleteMember(memberId);
+      await refreshAdminData();
+      if (memberDraft.id === memberId) {
+        resetMemberDraft();
+      }
+      setInfoMessage('部員情報を削除しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '部員情報の削除に失敗しました。');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!settingsDraft) {
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage('');
+    setInfoMessage('');
+
+    try {
+      await updateSiteSettings({
+        ...settingsDraft,
+        updatedAt: nowIso(),
+      });
+      await refreshAdminData();
+      setInfoMessage('サイト設定を保存しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'サイト設定の保存に失敗しました。');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -263,10 +268,8 @@ export const AdminPage = () => {
       </div>
 
       <p>
-        Cloud Functions経由でパスワード認証し、カスタムトークンで管理者ログインします。
-        {runtimeMode === 'sample'
-          ? ' 現在はサンプルモードです。Firebase設定またはエミュレータ起動後にログインできます。'
-          : ''}
+        現在はローカル管理モードです。Firebase を使わず、このブラウザ内に保存される管理データへ直接ログインします。
+        {runtimeMode === 'sample' ? ' 管理用パスワードは 1112 です。' : ''}
       </p>
 
       <label className="field-label" htmlFor="admin-password">
@@ -278,6 +281,11 @@ export const AdminPage = () => {
         className="text-input"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            void handleLogin();
+          }
+        }}
       />
       <div className="form-actions">
         <button
@@ -286,7 +294,7 @@ export const AdminPage = () => {
           disabled={!authReady || loggingIn}
           onClick={() => void handleLogin()}
         >
-          {loggingIn ? '認証中…' : 'ログイン'}
+          {loggingIn ? '認証中...' : 'ログイン'}
         </button>
       </div>
 
@@ -325,1105 +333,603 @@ export const AdminPage = () => {
               >
                 {tab === 'dashboard'
                   ? 'ダッシュボード'
-                  : tab === 'entries'
-                    ? '抽選候補者'
-                    : tab === 'lottery'
-                      ? '抽選実行'
-                      : tab === 'activities'
-                        ? '活動予定'
-                        : tab === 'members'
-                          ? '部員管理'
-                          : 'サイト設定'}
+                  : tab === 'activities'
+                    ? '活動予定'
+                    : tab === 'members'
+                      ? '部員管理'
+                      : 'サイト設定'}
               </button>
             ))}
           </div>
 
-          {!adminData ? (
-            <p className="empty-message">管理データを読み込んでいます…</p>
-          ) : (
-            <>
-              {activeTab === 'dashboard' ? (
-                <div className="dashboard-grid">
-                  <article className="metric-card">
-                    <span>候補者数</span>
-                    <strong>{adminData.entries.length}</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span>抽選対象者数</span>
-                    <strong>{eligibleEntries.length}</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span>公開中活動</span>
-                    <strong>{adminData.activities.filter((activity) => activity.isPublic).length}</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span>受付状態</span>
-                    <strong>{lotteryStatusLabels[adminData.settings.lotteryStatus]}</strong>
-                  </article>
-                  <article className="detail-card full-span">
-                    <h2>直近の監査ログ</h2>
-                    {adminData.audits.length === 0 ? (
-                      <p className="empty-message">監査ログはまだありません。</p>
-                    ) : (
-                      <ul className="audit-list">
-                        {adminData.audits.map((log) => (
-                          <li key={log.id}>
-                            <strong>{log.action}</strong>
-                            <span>{log.message}</span>
-                            <small>{formatDateTime(log.createdAt)}</small>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </article>
-                </div>
-              ) : null}
-
-              {activeTab === 'entries' ? (
-                <div className="admin-grid">
-                  <article className="metric-card">
-                    <span>候補者数</span>
-                    <strong>{adminData.entries.length}</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span>抽選対象者数</span>
-                    <strong>{eligibleEntries.length}</strong>
-                  </article>
-                  <div className="detail-card">
-                    <label className="field-label" htmlFor="entry-search">
-                      VRC名検索
-                    </label>
-                    <input
-                      id="entry-search"
-                      className="text-input"
-                      type="search"
-                      value={searchText}
-                      onChange={(event) => setSearchText(event.target.value)}
-                    />
-                  </div>
-                  <div className="detail-card">
-                    <label className="field-label" htmlFor="entry-sort">
-                      並び順
-                    </label>
-                    <select
-                      id="entry-sort"
-                      className="text-input"
-                      value={entrySort}
-                      onChange={(event) => setEntrySort(event.target.value as EntrySort)}
-                    >
-                      <option value="newest">登録日時が新しい順</option>
-                      <option value="oldest">登録順</option>
-                    </select>
-                  </div>
-                  <div className="detail-card full-span">
-                    <div className="section-heading compact-heading">
-                      <h2>抽選候補者一覧</h2>
-                      <div className="inline-actions">
-                        <button
-                          type="button"
-                          className="secondary-button inline-button"
-                          onClick={() => void refreshAdminData()}
-                        >
-                          一覧更新
-                        </button>
-                        <button
-                          type="button"
-                          className="danger-button inline-button"
-                          onClick={() => {
-                            const confirmed = window.confirm(
-                              `候補者一覧をすべて削除します。この操作は元に戻せません。\n削除対象: ${adminData.entries.length}件`,
-                            );
-
-                            if (confirmed) {
-                              void resetLotteryEntries()
-                                .then(async () => {
-                                  setInfoMessage(`${adminData.entries.length}件の候補者を削除しました。`);
-                                  await refreshAdminData();
-                                })
-                                .catch((error) => {
-                                  setErrorMessage(
-                                    error instanceof Error ? error.message : '削除に失敗しました。',
-                                  );
-                                });
-                            }
-                          }}
-                        >
-                          候補者全削除
-                        </button>
-                      </div>
-                    </div>
-
-                    {filteredEntries.length === 0 ? (
-                      <p className="empty-message">条件に一致する候補者はいません。</p>
-                    ) : (
-                      <>
-                        <div className="mobile-admin-list">
-                          {filteredEntries.map((entry, index) => (
-                            <article key={entry.id} className="info-card mobile-admin-card">
-                              <div className="mobile-admin-card-header">
-                                <strong>候補者 {index + 1}</strong>
-                                <span className={`status-pill ${entry.eligible ? 'status-open' : 'status-closed'}`}>
-                                  {entry.eligible ? '対象' : '対象外'}
-                                </span>
-                              </div>
-                              <dl className="stacked-details">
-                                <div>
-                                  <dt>VRC名</dt>
-                                  <dd className="breakable-cell">{entry.displayName}</dd>
-                                </div>
-                                <div>
-                                  <dt>登録日時</dt>
-                                  <dd>{formatDateTime(entry.createdAt)}</dd>
-                                </div>
-                              </dl>
-                              <div className="inline-actions">
-                                <button
-                                  type="button"
-                                  className="secondary-button inline-button"
-                                  onClick={() =>
-                                    void updateLotteryEntryEligibility(entry.id, !entry.eligible)
-                                      .then(async () => {
-                                        setInfoMessage(
-                                          entry.eligible
-                                            ? '候補者を抽選対象外にしました。'
-                                            : '候補者を抽選対象に戻しました。',
-                                        );
-                                        await refreshAdminData();
-                                      })
-                                      .catch((error) => {
-                                        setErrorMessage(
-                                          error instanceof Error ? error.message : '更新に失敗しました。',
-                                        );
-                                      })
-                                  }
-                                >
-                                  {entry.eligible ? '除外' : '除外解除'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="danger-button inline-button"
-                                  onClick={() => {
-                                    const confirmed = window.confirm(
-                                      `候補者「${entry.displayName}」を削除しますか？`,
-                                    );
-
-                                    if (confirmed) {
-                                      void deleteLotteryEntry(entry.id)
-                                        .then(async () => {
-                                          setInfoMessage('候補者を削除しました。');
-                                          await refreshAdminData();
-                                        })
-                                        .catch((error) => {
-                                          setErrorMessage(
-                                            error instanceof Error ? error.message : '削除に失敗しました。',
-                                          );
-                                        });
-                                    }
-                                  }}
-                                >
-                                  削除
-                                </button>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-
-                        <div className="table-scroll desktop-admin-table">
-                          <table className="admin-table">
-                            <thead>
-                              <tr>
-                                <th>通し番号</th>
-                                <th>VRC名</th>
-                                <th>登録日時</th>
-                                <th>抽選対象</th>
-                                <th>操作</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredEntries.map((entry, index) => (
-                                <tr key={entry.id}>
-                                  <td>{index + 1}</td>
-                                  <td className="breakable-cell">{entry.displayName}</td>
-                                  <td>{formatDateTime(entry.createdAt)}</td>
-                                  <td>{entry.eligible ? '対象' : '対象外'}</td>
-                                  <td>
-                                    <div className="inline-actions">
-                                      <button
-                                        type="button"
-                                        className="secondary-button inline-button"
-                                        onClick={() =>
-                                          void updateLotteryEntryEligibility(entry.id, !entry.eligible)
-                                            .then(async () => {
-                                              setInfoMessage(
-                                                entry.eligible
-                                                  ? '候補者を抽選対象外にしました。'
-                                                  : '候補者を抽選対象に戻しました。',
-                                              );
-                                              await refreshAdminData();
-                                            })
-                                            .catch((error) => {
-                                              setErrorMessage(
-                                                error instanceof Error
-                                                  ? error.message
-                                                  : '更新に失敗しました。',
-                                              );
-                                            })
-                                        }
-                                      >
-                                        {entry.eligible ? '除外' : '除外解除'}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="danger-button inline-button"
-                                        onClick={() => {
-                                          const confirmed = window.confirm(
-                                            `候補者「${entry.displayName}」を削除しますか？`,
-                                          );
-
-                                          if (confirmed) {
-                                            void deleteLotteryEntry(entry.id)
-                                              .then(async () => {
-                                                setInfoMessage('候補者を削除しました。');
-                                                await refreshAdminData();
-                                              })
-                                              .catch((error) => {
-                                                setErrorMessage(
-                                                  error instanceof Error
-                                                    ? error.message
-                                                    : '削除に失敗しました。',
-                                                );
-                                              });
-                                          }
-                                        }}
-                                      >
-                                        削除
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                    </>
-                  )}
-                  </div>
-                </div>
-              ) : null}
-
-              {activeTab === 'lottery' ? (
-                <div className="admin-grid">
-                  <article className="detail-card">
-                    <h2>抽選実行</h2>
-                    <p>結果はサーバー側で確定し、その後に約3秒のカフェ風演出を表示します。</p>
-                    <div className="quick-button-row">
-                      {quickWinnerCounts.map((count) => (
-                        <button
-                          key={count}
-                          type="button"
-                          className={`secondary-button inline-button ${
-                            winnerCount === count ? 'is-selected-button' : ''
-                          }`}
-                          disabled={count > eligibleEntries.length}
-                          onClick={() => setWinnerCount(count)}
-                        >
-                          {count}名
-                        </button>
-                      ))}
-                    </div>
-                    <label className="field-label" htmlFor="winner-count">
-                      当選人数
-                    </label>
-                    <input
-                      id="winner-count"
-                      className="text-input"
-                      type="number"
-                      min={1}
-                      max={Math.max(eligibleEntries.length, 1)}
-                      value={winnerCount}
-                      onChange={(event) => setWinnerCount(Number(event.target.value))}
-                    />
-                    <div className="form-actions">
-                      <button
-                        type="button"
-                        className="primary-button inline-button"
-                        disabled={runningLottery || eligibleEntries.length === 0}
-                        onClick={() => void handleRunLottery()}
-                      >
-                        {runningLottery ? '抽選中…' : '抽選開始'}
-                      </button>
-                    </div>
-                  </article>
-
-                  <article className="detail-card">
-                    <h2>現在の候補者数</h2>
-                    <p>候補者数: {adminData.entries.length}</p>
-                    <p>抽選対象者数: {eligibleEntries.length}</p>
-                    <p>最大当選人数: {eligibleEntries.length}</p>
-                  </article>
-
-                  <article className="detail-card full-span">
-                    <div className="section-heading compact-heading">
-                      <h2>抽選演出</h2>
-                      {presentation.phase === 'revealing' ? (
-                        <button
-                          type="button"
-                          className="secondary-button inline-button"
-                          onClick={() => finalizePresentation(presentation.draw)}
-                        >
-                          演出をスキップする
-                        </button>
-                      ) : null}
-                    </div>
-
-                    {presentation.phase === 'idle' ? (
-                      <p className="empty-message">抽選開始後にここへ演出と結果を表示します。</p>
-                    ) : (
-                      <div className="lottery-stage">
-                        <div className="lottery-stage-header">
-                          <div className="coffee-orb coffee-orb-small" />
-                          <div className="steam steam-stage-left" />
-                          <div className="steam steam-stage-right" />
-                          <div>
-                            <strong>
-                              {presentation.phase === 'revealing'
-                                ? 'メニューカードをシャッフルしています…'
-                                : '当選おめでとうございます！'}
-                            </strong>
-                            <p>
-                              {presentation.phase === 'revealing'
-                                ? '結果はサーバー側で確定済みです。'
-                                : 'Cloud Functionsで確定した当選者です。'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="winner-grid">
-                          {presentation.previewNames.map((name, index) => (
-                            <article
-                              key={`${name}-${index}`}
-                              className={`winner-tile ${
-                                presentation.phase === 'revealing' ? 'is-shuffling' : ''
-                              }`}
-                            >
-                              当選者: {name}
-                            </article>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </article>
-
-                  <article className="detail-card full-span">
-                    <div className="section-heading compact-heading">
-                      <h2>抽選履歴</h2>
-                    </div>
-                    {adminData.draws.length === 0 ? (
-                      <p className="empty-message">抽選履歴はまだありません。</p>
-                    ) : (
-                      <>
-                        <div className="mobile-admin-list">
-                          {adminData.draws.map((draw) => (
-                            <article key={draw.id} className="info-card mobile-admin-card">
-                              <div className="mobile-admin-card-header">
-                                <strong>{formatDateTime(draw.createdAt)}</strong>
-                                <span className="status-pill">{draw.winnerCount}名</span>
-                              </div>
-                              <dl className="stacked-details">
-                                <div>
-                                  <dt>当選者</dt>
-                                  <dd className="breakable-cell">{draw.winners.join(' / ')}</dd>
-                                </div>
-                                <div>
-                                  <dt>候補者数</dt>
-                                  <dd>{draw.candidateCount}</dd>
-                                </div>
-                                <div>
-                                  <dt>実行者</dt>
-                                  <dd>{draw.executedBy}</dd>
-                                </div>
-                                <div>
-                                  <dt>備考</dt>
-                                  <dd className="breakable-cell">{draw.notes || '記録なし'}</dd>
-                                </div>
-                              </dl>
-                              <div className="inline-actions">
-                                <button
-                                  type="button"
-                                  className="danger-button inline-button"
-                                  onClick={() => {
-                                    const confirmed = window.confirm(
-                                      `抽選履歴を削除しますか？\n対象: ${draw.winners.join(' / ')}`,
-                                    );
-
-                                    if (confirmed) {
-                                      void deleteLotteryDraw(draw.id)
-                                        .then(async () => {
-                                          setInfoMessage('抽選履歴を削除しました。');
-                                          await refreshAdminData();
-                                        })
-                                        .catch((error) => {
-                                          setErrorMessage(
-                                            error instanceof Error
-                                              ? error.message
-                                              : '履歴削除に失敗しました。',
-                                          );
-                                        });
-                                    }
-                                  }}
-                                >
-                                  削除
-                                </button>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-
-                        <div className="table-scroll desktop-admin-table">
-                          <table className="admin-table">
-                            <thead>
-                              <tr>
-                                <th>抽選日時</th>
-                                <th>当選者</th>
-                                <th>当選人数</th>
-                                <th>候補者数</th>
-                                <th>実行者</th>
-                                <th>備考</th>
-                                <th>操作</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {adminData.draws.map((draw) => (
-                                <tr key={draw.id}>
-                                  <td>{formatDateTime(draw.createdAt)}</td>
-                                  <td className="breakable-cell">{draw.winners.join(' / ')}</td>
-                                  <td>{draw.winnerCount}</td>
-                                  <td>{draw.candidateCount}</td>
-                                  <td>{draw.executedBy}</td>
-                                  <td className="breakable-cell">{draw.notes || '記録なし'}</td>
-                                  <td>
-                                    <button
-                                      type="button"
-                                      className="danger-button inline-button"
-                                      onClick={() => {
-                                        const confirmed = window.confirm(
-                                          `抽選履歴を削除しますか？\n対象: ${draw.winners.join(' / ')}`,
-                                        );
-
-                                        if (confirmed) {
-                                          void deleteLotteryDraw(draw.id)
-                                            .then(async () => {
-                                              setInfoMessage('抽選履歴を削除しました。');
-                                              await refreshAdminData();
-                                            })
-                                            .catch((error) => {
-                                              setErrorMessage(
-                                                error instanceof Error
-                                                  ? error.message
-                                                  : '履歴削除に失敗しました。',
-                                              );
-                                            });
-                                        }
-                                      }}
-                                    >
-                                      削除
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                    </>
-                  )}
-                  </article>
-                </div>
-              ) : null}
-
-              {activeTab === 'activities' ? (
-                <div className="admin-grid">
-                  <article className="detail-card full-span">
-                    <h2>活動予定管理</h2>
-                    {adminData.activities.length === 0 ? (
-                      <p className="empty-message">活動予定はまだ登録されていません。</p>
-                    ) : (
-                      <div className="card-grid">
-                        {adminData.activities.map((activity) => (
-                          <article key={activity.id} className="info-card">
-                            <span className="chip subtle-chip">{activityKindLabels[activity.kind]}</span>
-                            <h3>{activity.title}</h3>
-                            <p>{activity.description}</p>
-                            <dl className="stacked-details compact-details">
-                              <div>
-                                <dt>開催日時</dt>
-                                <dd>
-                                  {activity.date} {activity.startTime} - {activity.endTime}
-                                </dd>
-                              </div>
-                              <div>
-                                <dt>集合場所</dt>
-                                <dd>{activity.meetingPoint}</dd>
-                              </div>
-                              <div>
-                                <dt>公開状態</dt>
-                                <dd>{activity.isPublic ? '公開中' : '非公開'}</dd>
-                              </div>
-                            </dl>
-                            <div className="inline-actions">
-                              <button
-                                type="button"
-                                className="secondary-button inline-button"
-                                onClick={() => setActivityDraft(activity)}
-                              >
-                                編集
-                              </button>
-                              <button
-                                type="button"
-                                className="danger-button inline-button"
-                                onClick={() => {
-                                  const confirmed = window.confirm(
-                                    `活動予定「${activity.title}」を削除しますか？`,
-                                  );
-
-                                  if (confirmed) {
-                                    void deleteActivity(activity.id)
-                                      .then(async () => {
-                                        setInfoMessage('活動予定を削除しました。');
-                                        await refreshAdminData();
-                                      })
-                                      .catch((error) => {
-                                        setErrorMessage(
-                                          error instanceof Error ? error.message : '削除に失敗しました。',
-                                        );
-                                      });
-                                  }
-                                }}
-                              >
-                                削除
-                              </button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-
-                  <article className="detail-card full-span">
-                    <div className="section-heading compact-heading">
-                      <h2>活動予定フォーム</h2>
-                      <button
-                        type="button"
-                        className="secondary-button inline-button"
-                        onClick={() => setActivityDraft(blankActivity())}
-                      >
-                        新規入力へ戻す
-                      </button>
-                    </div>
-                    <div className="form-grid">
-                      <label>
-                        活動名
-                        <input
-                          className="text-input"
-                          value={activityDraft.title}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({ ...current, title: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        種類
-                        <select
-                          className="text-input"
-                          value={activityDraft.kind}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({
-                              ...current,
-                              kind: event.target.value as Activity['kind'],
-                            }))
-                          }
-                        >
-                          {Object.entries(activityKindLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        開催日
-                        <input
-                          className="text-input"
-                          type="date"
-                          value={activityDraft.date}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({ ...current, date: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        開始時刻
-                        <input
-                          className="text-input"
-                          type="time"
-                          value={activityDraft.startTime}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({
-                              ...current,
-                              startTime: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        終了時刻
-                        <input
-                          className="text-input"
-                          type="time"
-                          value={activityDraft.endTime}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({ ...current, endTime: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        集合場所
-                        <input
-                          className="text-input"
-                          value={activityDraft.meetingPoint}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({
-                              ...current,
-                              meetingPoint: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        対象者
-                        <input
-                          className="text-input"
-                          value={activityDraft.targetAudience}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({
-                              ...current,
-                              targetAudience: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={activityDraft.isPublic}
-                          onChange={(event) =>
-                            setActivityDraft((current) => ({
-                              ...current,
-                              isPublic: event.target.checked,
-                            }))
-                          }
-                        />
-                        公開する
-                      </label>
-                    </div>
-                    <label>
-                      内容
-                      <textarea
-                        className="text-area"
-                        value={activityDraft.description}
-                        onChange={(event) =>
-                          setActivityDraft((current) => ({
-                            ...current,
-                            description: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      備考
-                      <textarea
-                        className="text-area"
-                        value={activityDraft.notes}
-                        onChange={(event) =>
-                          setActivityDraft((current) => ({ ...current, notes: event.target.value }))
-                        }
-                      />
-                    </label>
-                    <div className="form-actions">
-                      <button
-                        type="button"
-                        className="primary-button inline-button"
-                        onClick={() =>
-                          void upsertActivity({ ...activityDraft, updatedAt: nowIso() })
-                            .then(async () => {
-                              setInfoMessage('活動予定を保存しました。');
-                              setActivityDraft(blankActivity());
-                              await refreshAdminData();
-                            })
-                            .catch((error) => {
-                              setErrorMessage(
-                                error instanceof Error ? error.message : '保存に失敗しました。',
-                              );
-                            })
-                        }
-                      >
-                        保存
-                      </button>
-                    </div>
-                  </article>
-                </div>
-              ) : null}
-
-              {activeTab === 'members' ? (
-                <div className="admin-grid">
-                  <article className="detail-card full-span">
-                    <h2>部員管理</h2>
-                    {adminData.members.length === 0 ? (
-                      <p className="empty-message">部員情報はまだ登録されていません。</p>
-                    ) : (
-                      <div className="card-grid">
-                        {adminData.members.map((member) => (
-                          <article key={member.id} className="info-card">
-                            <img
-                              className="admin-avatar-preview"
-                              src={member.avatarImageUrl || buildAvatarImage(member.avatarLabel, member.role)}
-                              alt={`${member.vrcName}のアイコン画像`}
-                            />
-                            <span className="chip subtle-chip">{member.role}</span>
-                            <h3>{member.vrcName}</h3>
-                            <p>{member.duties}</p>
-                            <p>在籍状況: {member.status}</p>
-                            <div className="inline-actions">
-                              <button
-                                type="button"
-                                className="secondary-button inline-button"
-                                onClick={() => setMemberDraft(member)}
-                              >
-                                編集
-                              </button>
-                              <button
-                                type="button"
-                                className="danger-button inline-button"
-                                onClick={() => {
-                                  const confirmed = window.confirm(
-                                    `部員「${member.vrcName}」を削除しますか？`,
-                                  );
-
-                                  if (confirmed) {
-                                    void deleteMember(member.id)
-                                      .then(async () => {
-                                        setInfoMessage('部員情報を削除しました。');
-                                        await refreshAdminData();
-                                      })
-                                      .catch((error) => {
-                                        setErrorMessage(
-                                          error instanceof Error ? error.message : '削除に失敗しました。',
-                                        );
-                                      });
-                                  }
-                                }}
-                              >
-                                削除
-                              </button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-
-                  <article className="detail-card full-span">
-                    <div className="section-heading compact-heading">
-                      <h2>部員フォーム</h2>
-                      <button
-                        type="button"
-                        className="secondary-button inline-button"
-                        onClick={() => setMemberDraft(blankMember())}
-                      >
-                        新規入力へ戻す
-                      </button>
-                    </div>
-                    <div className="form-grid">
-                      <label>
-                        VRC名
-                        <input
-                          className="text-input"
-                          value={memberDraft.vrcName}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({ ...current, vrcName: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        アイコン表示文字
-                        <input
-                          className="text-input"
-                          value={memberDraft.avatarLabel}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              avatarLabel: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        アイコン画像URL
-                        <input
-                          className="text-input"
-                          value={memberDraft.avatarImageUrl}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              avatarImageUrl: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        役職
-                        <input
-                          className="text-input"
-                          value={memberDraft.role}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({ ...current, role: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        担当
-                        <input
-                          className="text-input"
-                          value={memberDraft.duties}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({ ...current, duties: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        好きな飲み物
-                        <input
-                          className="text-input"
-                          value={memberDraft.favoriteDrink}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              favoriteDrink: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        在籍状況
-                        <input
-                          className="text-input"
-                          value={memberDraft.status}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({ ...current, status: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        並び順
-                        <input
-                          className="text-input"
-                          type="number"
-                          value={memberDraft.sortOrder}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              sortOrder: Number(event.target.value),
-                            }))
-                          }
-                        />
-                      </label>
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={memberDraft.isLeadership}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              isLeadership: event.target.checked,
-                            }))
-                          }
-                        />
-                        部長・副部長として強調表示
-                      </label>
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={memberDraft.isPublic}
-                          onChange={(event) =>
-                            setMemberDraft((current) => ({
-                              ...current,
-                              isPublic: event.target.checked,
-                            }))
-                          }
-                        />
-                        公開する
-                      </label>
-                    </div>
-                    <label>
-                      自己紹介
-                      <textarea
-                        className="text-area"
-                        value={memberDraft.bio}
-                        onChange={(event) =>
-                          setMemberDraft((current) => ({ ...current, bio: event.target.value }))
-                        }
-                      />
-                    </label>
-                    <div className="admin-avatar-form-preview">
-                      <img
-                        className="admin-avatar-preview"
-                        src={
-                          memberDraft.avatarImageUrl ||
-                          buildAvatarImage(memberDraft.avatarLabel, memberDraft.role)
-                        }
-                        alt="部員アイコンのプレビュー"
-                      />
-                    </div>
-                    <div className="form-actions">
-                      <button
-                        type="button"
-                        className="primary-button inline-button"
-                        onClick={() =>
-                          void upsertMember({ ...memberDraft, updatedAt: nowIso() })
-                            .then(async () => {
-                              setInfoMessage('部員情報を保存しました。');
-                              setMemberDraft(blankMember());
-                              await refreshAdminData();
-                            })
-                            .catch((error) => {
-                              setErrorMessage(
-                                error instanceof Error ? error.message : '保存に失敗しました。',
-                              );
-                            })
-                        }
-                      >
-                        保存
-                      </button>
-                    </div>
-                  </article>
-                </div>
-              ) : null}
-
-              {activeTab === 'settings' && settingsDraft ? (
-                <div className="admin-grid">
-                  <article className="detail-card full-span">
-                    <h2>サイト設定</h2>
-                    <div className="form-grid">
-                      <label>
-                        サイト名
-                        <input
-                          className="text-input"
-                          value={settingsDraft.siteName}
-                          onChange={(event) =>
-                            setSettingsDraft((current) =>
-                              current ? { ...current, siteName: event.target.value } : current,
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        抽選受付状態
-                        <select
-                          className="text-input"
-                          value={settingsDraft.lotteryStatus}
-                          onChange={(event) =>
-                            setSettingsDraft((current) =>
-                              current
-                                ? {
-                                    ...current,
-                                    lotteryStatus: event.target.value as SiteSettings['lotteryStatus'],
-                                  }
-                                : current,
-                            )
-                          }
-                        >
-                          {Object.entries(lotteryStatusLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        問い合わせ先
-                        <input
-                          className="text-input"
-                          value={settingsDraft.supportEmail}
-                          onChange={(event) =>
-                            setSettingsDraft((current) =>
-                              current ? { ...current, supportEmail: event.target.value } : current,
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-                    <label>
-                      サイト説明
-                      <textarea
-                        className="text-area"
-                        value={settingsDraft.siteDescription}
-                        onChange={(event) =>
-                          setSettingsDraft((current) =>
-                            current ? { ...current, siteDescription: event.target.value } : current,
-                          )
-                        }
-                      />
-                    </label>
-                    <label>
-                      抽選案内文
-                      <textarea
-                        className="text-area"
-                        value={settingsDraft.lotteryNotice}
-                        onChange={(event) =>
-                          setSettingsDraft((current) =>
-                            current ? { ...current, lotteryNotice: event.target.value } : current,
-                          )
-                        }
-                      />
-                    </label>
-                    <label>
-                      入部案内文
-                      <textarea
-                        className="text-area"
-                        value={settingsDraft.joinGuideNote}
-                        onChange={(event) =>
-                          setSettingsDraft((current) =>
-                            current ? { ...current, joinGuideNote: event.target.value } : current,
-                          )
-                        }
-                      />
-                    </label>
-                    <div className="form-actions">
-                      <button
-                        type="button"
-                        className="primary-button inline-button"
-                        onClick={() =>
-                          void updateSiteSettings({ ...settingsDraft, updatedAt: nowIso() })
-                            .then(async () => {
-                              setInfoMessage('サイト設定を保存しました。');
-                              await refreshAdminData();
-                            })
-                            .catch((error) => {
-                              setErrorMessage(
-                                error instanceof Error ? error.message : '保存に失敗しました。',
-                              );
-                            })
-                        }
-                      >
-                        保存
-                      </button>
-                    </div>
-                  </article>
-                </div>
-              ) : null}
-            </>
-          )}
-
           {errorMessage ? <p className="error-text">{errorMessage}</p> : null}
           {infoMessage ? <p className="success-text">{infoMessage}</p> : null}
+
+          {!adminData ? (
+            <p className="empty-message">管理データを読み込んでいます...</p>
+          ) : null}
+
+          {adminData && activeTab === 'dashboard' ? (
+            <div className="dashboard-grid">
+              <article className="metric-card">
+                <span>活動予定件数</span>
+                <strong>{activityCount}</strong>
+              </article>
+              <article className="metric-card">
+                <span>公開中活動</span>
+                <strong>{publicActivityCount}</strong>
+              </article>
+              <article className="metric-card">
+                <span>部員数</span>
+                <strong>{memberCount}</strong>
+              </article>
+              <article className="metric-card">
+                <span>公開中部員</span>
+                <strong>{publicMemberCount}</strong>
+              </article>
+              <article className="detail-card full-span">
+                <h2>基本設定</h2>
+                <dl className="stacked-details compact-details">
+                  <div>
+                    <dt>サイト名</dt>
+                    <dd>{adminData.settings.siteName}</dd>
+                  </div>
+                  <div>
+                    <dt>サポート連絡先</dt>
+                    <dd>{adminData.settings.supportEmail}</dd>
+                  </div>
+                  <div>
+                    <dt>最終更新</dt>
+                    <dd>{formatDateTime(adminData.settings.updatedAt)}</dd>
+                  </div>
+                </dl>
+              </article>
+              <article className="detail-card full-span">
+                <h2>最近の監査ログ</h2>
+                {recentAudits.length === 0 ? (
+                  <p className="empty-message">監査ログはまだありません。</p>
+                ) : (
+                  <ul className="audit-list">
+                    {recentAudits.map((log) => (
+                      <li key={log.id}>
+                        <strong>{log.action}</strong>
+                        <span>{log.message}</span>
+                        <small>{formatDateTime(log.createdAt)}</small>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </div>
+          ) : null}
+
+          {adminData && activeTab === 'activities' ? (
+            <div className="admin-grid">
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Activity Editor</span>
+                    <h2>活動予定を編集</h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-button inline-button"
+                    onClick={resetActivityDraft}
+                  >
+                    新規作成
+                  </button>
+                </div>
+
+                <div className="form-grid">
+                  <label>
+                    タイトル
+                    <input
+                      className="text-input"
+                      value={activityDraft.title}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({ ...current, title: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    種類
+                    <select
+                      className="text-input"
+                      value={activityDraft.kind}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({
+                          ...current,
+                          kind: event.target.value as Activity['kind'],
+                        }))
+                      }
+                    >
+                      {activityKindOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    開催日
+                    <input
+                      type="date"
+                      className="text-input"
+                      value={activityDraft.date}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({ ...current, date: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    開始時刻
+                    <input
+                      type="time"
+                      className="text-input"
+                      value={activityDraft.startTime}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({
+                          ...current,
+                          startTime: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    終了時刻
+                    <input
+                      type="time"
+                      className="text-input"
+                      value={activityDraft.endTime}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({
+                          ...current,
+                          endTime: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    対象者
+                    <input
+                      className="text-input"
+                      value={activityDraft.targetAudience}
+                      onChange={(event) =>
+                        setActivityDraft((current) => ({
+                          ...current,
+                          targetAudience: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+
+                <label>
+                  内容
+                  <textarea
+                    className="text-area"
+                    value={activityDraft.description}
+                    onChange={(event) =>
+                      setActivityDraft((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  集合場所
+                  <input
+                    className="text-input"
+                    value={activityDraft.meetingPoint}
+                    onChange={(event) =>
+                      setActivityDraft((current) => ({
+                        ...current,
+                        meetingPoint: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  備考
+                  <textarea
+                    className="text-area"
+                    value={activityDraft.notes}
+                    onChange={(event) =>
+                      setActivityDraft((current) => ({ ...current, notes: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={activityDraft.isPublic}
+                    onChange={(event) =>
+                      setActivityDraft((current) => ({
+                        ...current,
+                        isPublic: event.target.checked,
+                      }))
+                    }
+                  />
+                  公開する
+                </label>
+
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="primary-button inline-button"
+                    disabled={saving}
+                    onClick={() => void handleSaveActivity()}
+                  >
+                    {saving ? '保存中...' : '活動予定を保存'}
+                  </button>
+                </div>
+              </article>
+
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Activity List</span>
+                    <h2>登録済みの活動予定</h2>
+                  </div>
+                </div>
+
+                {adminData.activities.length === 0 ? (
+                  <p className="empty-message">活動予定はまだありません。</p>
+                ) : (
+                  <div className="card-grid">
+                    {adminData.activities.map((activity) => (
+                      <article key={activity.id} className="detail-card">
+                        <span className="chip subtle-chip">
+                          {
+                            activityKindOptions.find((option) => option.value === activity.kind)
+                              ?.label
+                          }
+                        </span>
+                        <h3>{activity.title}</h3>
+                        <p>{activity.description}</p>
+                        <dl className="stacked-details compact-details">
+                          <div>
+                            <dt>日時</dt>
+                            <dd>
+                              {activity.date} {activity.startTime} - {activity.endTime}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>対象者</dt>
+                            <dd>{activity.targetAudience}</dd>
+                          </div>
+                          <div>
+                            <dt>公開状態</dt>
+                            <dd>{activity.isPublic ? '公開中' : '非公開'}</dd>
+                          </div>
+                        </dl>
+                        <div className="form-actions">
+                          <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            onClick={() => setActivityDraft(activity)}
+                          >
+                            編集
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            onClick={() => void handleDeleteActivity(activity.id)}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </div>
+          ) : null}
+
+          {adminData && activeTab === 'members' ? (
+            <div className="admin-grid">
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Member Editor</span>
+                    <h2>部員情報を編集</h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-button inline-button"
+                    onClick={resetMemberDraft}
+                  >
+                    新規作成
+                  </button>
+                </div>
+
+                <div className="form-grid">
+                  <label>
+                    VRC名
+                    <input
+                      className="text-input"
+                      value={memberDraft.vrcName}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({ ...current, vrcName: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    アイコンラベル
+                    <input
+                      className="text-input"
+                      value={memberDraft.avatarLabel}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({
+                          ...current,
+                          avatarLabel: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    画像URL
+                    <input
+                      className="text-input"
+                      value={memberDraft.avatarImageUrl}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({
+                          ...current,
+                          avatarImageUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    役職
+                    <input
+                      className="text-input"
+                      value={memberDraft.role}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({ ...current, role: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    担当
+                    <input
+                      className="text-input"
+                      value={memberDraft.duties}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({ ...current, duties: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    好きな飲み物
+                    <input
+                      className="text-input"
+                      value={memberDraft.favoriteDrink}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({
+                          ...current,
+                          favoriteDrink: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    在籍状況
+                    <input
+                      className="text-input"
+                      value={memberDraft.status}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({ ...current, status: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    並び順
+                    <input
+                      type="number"
+                      className="text-input"
+                      value={memberDraft.sortOrder}
+                      onChange={(event) =>
+                        setMemberDraft((current) => ({
+                          ...current,
+                          sortOrder: Number(event.target.value),
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+
+                <label>
+                  自己紹介
+                  <textarea
+                    className="text-area"
+                    value={memberDraft.bio}
+                    onChange={(event) =>
+                      setMemberDraft((current) => ({ ...current, bio: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={memberDraft.isPublic}
+                    onChange={(event) =>
+                      setMemberDraft((current) => ({
+                        ...current,
+                        isPublic: event.target.checked,
+                      }))
+                    }
+                  />
+                  公開する
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={memberDraft.isLeadership}
+                    onChange={(event) =>
+                      setMemberDraft((current) => ({
+                        ...current,
+                        isLeadership: event.target.checked,
+                      }))
+                    }
+                  />
+                  部長・副部長として強調表示する
+                </label>
+
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="primary-button inline-button"
+                    disabled={saving}
+                    onClick={() => void handleSaveMember()}
+                  >
+                    {saving ? '保存中...' : '部員情報を保存'}
+                  </button>
+                </div>
+              </article>
+
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Member List</span>
+                    <h2>登録済みの部員</h2>
+                  </div>
+                </div>
+
+                {sortedMembers.length === 0 ? (
+                  <p className="empty-message">部員情報はまだありません。</p>
+                ) : (
+                  <div className="member-grid">
+                    {sortedMembers.map((member) => (
+                      <article
+                        key={member.id}
+                        className={`member-card ${member.isLeadership ? 'is-leadership' : ''}`}
+                      >
+                        <div className="member-card-header">
+                          <div>
+                            <span className="chip subtle-chip">{member.role}</span>
+                            <h2>{member.vrcName}</h2>
+                          </div>
+                          <img
+                            src={getAvatarSrc(member)}
+                            alt={`${member.vrcName} のアイコン`}
+                            className="avatar-image"
+                          />
+                        </div>
+                        <p>{member.bio}</p>
+                        <dl className="stacked-details compact-details">
+                          <div>
+                            <dt>担当</dt>
+                            <dd>{member.duties}</dd>
+                          </div>
+                          <div>
+                            <dt>好きな飲み物</dt>
+                            <dd>{member.favoriteDrink}</dd>
+                          </div>
+                          <div>
+                            <dt>公開状態</dt>
+                            <dd>{member.isPublic ? '公開中' : '非公開'}</dd>
+                          </div>
+                        </dl>
+                        <div className="form-actions">
+                          <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            onClick={() => setMemberDraft(member)}
+                          >
+                            編集
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            onClick={() => void handleDeleteMember(member.id)}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </div>
+          ) : null}
+
+          {adminData && activeTab === 'settings' && settingsDraft ? (
+            <article className="detail-card">
+              <div className="section-heading compact-heading">
+                <div>
+                  <span className="eyebrow">Site Settings</span>
+                  <h2>公開サイトの基本設定</h2>
+                </div>
+              </div>
+
+              <div className="form-grid">
+                <label>
+                  サイト名
+                  <input
+                    className="text-input"
+                    value={settingsDraft.siteName}
+                    onChange={(event) =>
+                      setSettingsDraft((current) =>
+                        current ? { ...current, siteName: event.target.value } : current,
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  サポート用メール
+                  <input
+                    className="text-input"
+                    value={settingsDraft.supportEmail}
+                    onChange={(event) =>
+                      setSettingsDraft((current) =>
+                        current ? { ...current, supportEmail: event.target.value } : current,
+                      )
+                    }
+                  />
+                </label>
+              </div>
+
+              <label>
+                サイト説明
+                <textarea
+                  className="text-area"
+                  value={settingsDraft.siteDescription}
+                  onChange={(event) =>
+                    setSettingsDraft((current) =>
+                      current ? { ...current, siteDescription: event.target.value } : current,
+                    )
+                  }
+                />
+              </label>
+              <label>
+                入部案内メモ
+                <textarea
+                  className="text-area"
+                  value={settingsDraft.joinGuideNote}
+                  onChange={(event) =>
+                    setSettingsDraft((current) =>
+                      current ? { ...current, joinGuideNote: event.target.value } : current,
+                    )
+                  }
+                />
+              </label>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="primary-button inline-button"
+                  disabled={saving}
+                  onClick={() => void handleSaveSettings()}
+                >
+                  {saving ? '保存中...' : 'サイト設定を保存'}
+                </button>
+              </div>
+            </article>
+          ) : null}
         </section>
       </div>
     </AdminGuard>

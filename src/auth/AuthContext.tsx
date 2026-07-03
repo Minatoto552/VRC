@@ -1,49 +1,44 @@
-import { onAuthStateChanged, type User } from 'firebase/auth';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { firebaseServices, runtimeMode } from '../lib/firebase';
+import { runtimeMode } from '../lib/firebase';
+import { isLocalAdminSignedIn, LOCAL_ADMIN_SESSION_EVENT } from '../lib/local-admin';
 
 interface AuthContextValue {
   authReady: boolean;
-  user: User | null;
   isAdminSignedIn: boolean;
   runtimeMode: typeof runtimeMode;
 }
 
 const AuthContext = createContext<AuthContextValue>({
-  authReady: runtimeMode === 'sample',
-  user: null,
+  authReady: true,
   isAdminSignedIn: false,
   runtimeMode,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(
-    runtimeMode === 'sample' || firebaseServices.auth === null,
-  );
+  const [isAdminSignedIn, setIsAdminSignedIn] = useState<boolean>(() => isLocalAdminSignedIn());
 
   useEffect(() => {
-    if (!firebaseServices.auth) {
-      return undefined;
-    }
+    const syncSession = () => {
+      setIsAdminSignedIn(isLocalAdminSignedIn());
+    };
 
-    const unsubscribe = onAuthStateChanged(firebaseServices.auth, (nextUser) => {
-      setUser(nextUser);
-      setAuthReady(true);
-    });
+    window.addEventListener(LOCAL_ADMIN_SESSION_EVENT, syncSession);
+    window.addEventListener('storage', syncSession);
 
-    return unsubscribe;
+    return () => {
+      window.removeEventListener(LOCAL_ADMIN_SESSION_EVENT, syncSession);
+      window.removeEventListener('storage', syncSession);
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      authReady,
-      user,
-      isAdminSignedIn: Boolean(user),
+      authReady: true,
+      isAdminSignedIn,
       runtimeMode,
     }),
-    [authReady, user],
+    [isAdminSignedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

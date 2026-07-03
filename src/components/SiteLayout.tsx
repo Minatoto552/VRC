@@ -18,7 +18,7 @@ interface SiteLayoutProps {
 
 const navigationItems = [
   { to: '/', label: 'ホーム' },
-  { to: '/concept', label: '会場案内' },
+  { to: '/concept', label: 'イベント紹介' },
   { to: '/schedule', label: '活動予定' },
   { to: '/members', label: '部員紹介' },
   { to: '/join', label: '入部案内' },
@@ -70,7 +70,7 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
               <nav
                 id="site-navigation"
                 className={`site-navigation ${menuOpen ? 'is-open' : ''}`}
-                aria-label="主要ナビゲーション"
+                aria-label="メインナビゲーション"
               >
                 {navigationItems.map((item) => (
                   <NavLink
@@ -107,21 +107,9 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
           <div className="runtime-banner" role="status" aria-live="polite">
             <CircleAlert size={18} />
             <div>
-              <strong>現在は公開準備中の表示です。</strong>
+              <strong>現在はローカル管理モードです。</strong>
               <p>
-                一部の掲載内容は確認用サンプルを含みます。最新の予定や部員情報は、公開準備に合わせて順次反映されます。
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {!loading && !runtimeNotice && runtimeMode === 'emulator' ? (
-          <div className="runtime-banner" role="status" aria-live="polite">
-            <CircleAlert size={18} />
-            <div>
-              <strong>現在はローカル Firebase Emulator モードです。</strong>
-              <p>
-                公開ページと管理ログインはローカルの Firebase Emulator Suite を参照しています。停止している場合は <code>npm run emulators</code> を起動してください。
+                Firebase を使わず、このブラウザ内に保存された公開データと管理データを表示しています。管理画面で保存した内容は、この端末のブラウザへ直接反映されます。
               </p>
             </div>
           </div>
@@ -132,9 +120,7 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
         <footer className="site-footer">
           <div>
             <strong>2026年3月同期会イベント部</strong>
-            <p>
-              当サイトおよびイベントは、VRChat Inc.が運営・協賛するものではありません。
-            </p>
+            <p>当サイトおよびイベントは、VRChat Inc.が運営・協賛するものではありません。</p>
           </div>
           <div className="footer-links">
             <NavLink to="/admin" className="footer-admin-link">

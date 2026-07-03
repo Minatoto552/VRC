@@ -1,9 +1,4 @@
-import type {
-  Activity,
-  MemberProfile,
-  PublicContent,
-  SiteSettings,
-} from '../../shared/models';
+import type { Activity, MemberProfile, PublicContent, SiteSettings } from '../../shared/models';
 
 const timestamp = '2026-06-29T12:00:00.000Z';
 
@@ -16,7 +11,7 @@ export const sampleActivities: Activity[] = [
     startTime: '21:00',
     endTime: '23:00',
     description:
-      '一般のお客様向けに、落ち着いた夜のカフェBarの雰囲気を体験してもらう案内イベントです。',
+      '一般のお客様向けに、落ち着いた夜のカフェBarの雰囲気を体験してもらう公開イベントです。',
     meetingPoint: 'VRCワールド入口',
     targetAudience: '一般参加者',
     notes: 'ドレスコードはありません。初参加の方にも分かりやすい案内を行います。',
@@ -34,7 +29,7 @@ export const sampleActivities: Activity[] = [
     description: '本番日の進行確認と案内フローの最終調整を行います。',
     meetingPoint: 'スタッフ控室',
     targetAudience: '部員',
-    notes: '公開サイトでは非表示です。',
+    notes: '公開サイトでは非表示の内部予定です。',
     isPublic: false,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -110,10 +105,9 @@ export const sampleMembers: MemberProfile[] = [
 export const sampleSettings: SiteSettings = {
   siteName: '2026年3月同期会 Event Cafe',
   siteDescription:
-    'VRChat上で開催する、あたたかく親しみやすいカフェBarイベントの公開サイトです。会場案内から活動予定、部員紹介まで一続きで確認できます。',
-  lotteryStatus: 'open',
-  lotteryNotice:
-    '抽選に参加する方は、VRChatで使用している名前を入力してください。個人情報は入力しないでください。',
+    'VRChat上で開催する、あたたかく親しみやすいカフェBarイベントの公開サイトです。会場案内から活動予定、部員紹介、入部案内まで一続きで確認できます。',
+  lotteryStatus: 'closed',
+  lotteryNotice: '抽選受付は現在使用していません。',
   joinGuideNote:
     '説明会後に軽い面接を予定しています。詳細は運営からの案内を確認してください。',
   supportEmail: 'event-cafe@example.com',

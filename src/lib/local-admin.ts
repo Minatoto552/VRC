@@ -15,7 +15,7 @@ import { sampleActivities, sampleMembers, sampleSettings } from './sample-data';
 
 export const LOCAL_ADMIN_PASSWORD = '1112';
 
-const ADMIN_CONTENT_KEY = 'event-cafe-local-admin-content-v1';
+const ADMIN_CONTENT_KEY = 'event-cafe-local-admin-content-v2';
 const ADMIN_SESSION_KEY = 'event-cafe-local-admin-session-v1';
 export const LOCAL_ADMIN_SESSION_EVENT = 'event-cafe-local-admin-session-change';
 

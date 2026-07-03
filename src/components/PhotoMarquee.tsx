@@ -32,13 +32,13 @@ export const PhotoMarquee = ({ items }: PhotoMarqueeProps) => {
   const loopItems = resolvedItems.length > 0 ? [...resolvedItems, ...resolvedItems] : [];
 
   return (
-    <section className="section-card photo-marquee-shell" aria-label="イベント写真スライド">
-      <div className="section-heading photo-marquee-heading">
+    <section className="photo-marquee-shell" aria-label="イベント写真ギャラリー">
+      <div className="photo-marquee-heading">
         <div>
           <span className="eyebrow">Cafe Moments</span>
           <h2>イベント写真ギャラリー</h2>
         </div>
-        <p>あとから登録した写真が、店内の記憶をめくるように上部でゆっくり流れます。</p>
+        <p>あとから登録した写真が、上部でゆっくり流れます。</p>
       </div>
 
       <div className="photo-marquee-window">

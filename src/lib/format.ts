@@ -11,11 +11,11 @@ export const activityKindLabels: Record<ActivityKind, string> = {
 
 export const activityKindIcons: Record<ActivityKind, string> = {
   'public-event': '☕',
-  'member-meeting': '🗓',
-  briefing: '📘',
-  interview: '🎤',
-  rehearsal: '🎬',
-  other: '✨',
+  'member-meeting': '📝',
+  briefing: '📋',
+  interview: '🤝',
+  rehearsal: '🎧',
+  other: '✦',
 };
 
 export const lotteryStatusLabels: Record<LotteryStatus, string> = {

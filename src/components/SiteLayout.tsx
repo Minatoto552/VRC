@@ -1,13 +1,8 @@
-import { CircleAlert, Menu, Sparkles } from 'lucide-react';
-import { Suspense, lazy, useState, type ReactNode } from 'react';
+import { CircleAlert, Menu, Sparkles, X } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 import type { PublicContent } from '../../shared/models';
-import { runtimeMode } from '../lib/firebase';
-
-const LazyCafeSceneCanvas = lazy(async () => ({
-  default: (await import('./CafeSceneCanvas')).CafeSceneCanvas,
-}));
 
 interface SiteLayoutProps {
   content: PublicContent;
@@ -22,7 +17,7 @@ const navigationItems = [
   { to: '/schedule', label: '活動予定' },
   { to: '/members', label: '部員紹介' },
   { to: '/join', label: '入部案内' },
-  { to: '/faq', label: 'よくある質問' },
+  { to: '/faq', label: 'FAQ' },
 ];
 
 export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLayoutProps) => {
@@ -38,15 +33,9 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
           menuOpen ? 'is-menu-open' : ''
         }`}
       >
-        {!isAdminRoute ? (
-          <Suspense fallback={null}>
-            <LazyCafeSceneCanvas content={content} />
-          </Suspense>
-        ) : null}
-
         <header className={`site-header ${isAdminRoute ? 'is-admin-header' : ''}`}>
           <NavLink to="/" className="brand-mark" onClick={() => setMenuOpen(false)}>
-            <Sparkles size={18} />
+            <Sparkles size={18} aria-hidden="true" />
             <span>{content.settings.siteName}</span>
           </NavLink>
 
@@ -61,10 +50,10 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
                 className="menu-toggle"
                 aria-expanded={menuOpen}
                 aria-controls="site-navigation"
+                aria-label={menuOpen ? 'メニューを閉じる' : 'メニューを開く'}
                 onClick={() => setMenuOpen((current) => !current)}
               >
-                <Menu size={18} />
-                <span>メニュー</span>
+                {menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
               </button>
 
               <nav
@@ -95,22 +84,10 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
 
         {!loading && runtimeNotice ? (
           <div className="runtime-banner" role="status" aria-live="polite">
-            <CircleAlert size={18} />
+            <CircleAlert size={18} aria-hidden="true" />
             <div>
-              <strong>ローカル確認用の表示です。</strong>
+              <strong>表示を切り替えました。</strong>
               <p>{runtimeNotice}</p>
-            </div>
-          </div>
-        ) : null}
-
-        {!loading && !runtimeNotice && runtimeMode === 'sample' ? (
-          <div className="runtime-banner" role="status" aria-live="polite">
-            <CircleAlert size={18} />
-            <div>
-              <strong>現在はローカル管理モードです。</strong>
-              <p>
-                Firebase を使わず、このブラウザ内に保存された公開データと管理データを表示しています。管理画面で保存した内容は、この端末のブラウザへ直接反映されます。
-              </p>
             </div>
           </div>
         ) : null}

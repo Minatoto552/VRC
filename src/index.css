@@ -201,9 +201,9 @@ main {
   align-items: center;
   gap: 12px;
   position: sticky;
-  top: 8px;
-  padding: 4px 2px 12px;
-  margin: 0 0 18px;
+  top: 4px;
+  padding: 2px 2px 6px;
+  margin: 0 0 10px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -409,7 +409,7 @@ main {
 }
 
 .photo-marquee-shell {
-  padding: 2px 0 18px;
+  padding: 0;
   overflow: hidden;
   position: relative;
   background: transparent;
@@ -441,7 +441,7 @@ main {
 }
 
 .photo-marquee-heading {
-  margin-bottom: 14px;
+  margin-bottom: 4px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
   align-items: end;
@@ -461,7 +461,7 @@ main {
   margin: 0;
   color: #fff1dc;
   font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 1.45rem;
+  font-size: 1.2rem;
   line-height: 1.18;
 }
 
@@ -483,8 +483,8 @@ main {
 }
 
 .photo-marquee-card {
-  flex: 0 0 clamp(250px, 28vw, 380px);
-  height: clamp(154px, 17vw, 224px);
+  flex: 0 0 clamp(200px, 25vw, 320px);
+  height: clamp(110px, 14vw, 160px);
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(132, 93, 59, 0.12);
@@ -2268,575 +2268,150 @@ main {
 }
 
 .home-redesign-stack {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
 }
 
 .home-hero-bento {
-  min-height: min(700px, 76svh);
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 24px;
-  padding: clamp(18px, 4vw, 44px) 2px 8px;
+  gap: 20px;
+  background: linear-gradient(180deg, rgba(251, 244, 236, 0.82), rgba(235, 225, 212, 0.72));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  min-height: 380px;
+  box-shadow: 0 18px 52px rgba(10, 8, 9, 0.24);
   position: relative;
-  isolation: isolate;
+  overflow: hidden;
 }
 
 .home-hero-copy {
-  display: grid;
-  gap: 18px;
-  align-content: center;
-  max-width: 760px;
-  color: #f8ecd9;
-}
-
-.home-hero-chip,
-.bento-panel-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  color: rgba(255, 236, 204, 0.86);
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 1;
 }
 
 .home-hero-chip {
-  max-width: 100%;
-  color: rgba(255, 236, 204, 0.9);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.home-hero-copy h1 {
-  margin: 0;
-  max-width: 12ch;
-  color: #fff3dd;
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 4.8rem;
-  line-height: 0.98;
-  text-wrap: balance;
-  text-shadow: 0 24px 58px rgba(0, 0, 0, 0.32);
-}
-
-.home-hero-copy p {
-  margin: 0;
-  max-width: 44rem;
-  color: rgba(248, 236, 218, 0.82);
-  font-size: 1.08rem;
-  line-height: 1.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #30415d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  width: fit-content;
+  box-shadow: 0 10px 24px rgba(80, 94, 133, 0.08);
 }
 
 .home-hero-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.home-hero-actions > * {
-  min-height: 48px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .home-hero-visual {
-  min-height: 430px;
   position: relative;
-  display: grid;
-  place-items: center;
-}
-
-.home-hero-glow {
-  position: absolute;
-  width: min(480px, 76vw);
-  aspect-ratio: 1;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(229, 171, 96, 0.12), rgba(78, 126, 124, 0.1)),
-    radial-gradient(circle, rgba(255, 231, 188, 0.16), transparent 64%);
-  filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
 }
 
 .home-hero-character {
-  width: min(520px, 92%);
-  max-height: 520px;
+  max-width: 100%;
+  max-height: 320px;
   object-fit: contain;
-  object-position: center bottom;
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 36px 42px rgba(7, 8, 12, 0.38));
+  filter: drop-shadow(0 16px 24px rgba(68, 46, 24, 0.2));
 }
 
-.home-bento-grid,
-.home-bottom-bento {
+.home-bento-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.home-bento-grid-simple {
-  align-items: stretch;
-}
-
-.bento-slot {
-  min-width: 0;
-}
-
-.bento-slot-next {
-  grid-column: span 7;
-  grid-row: span 2;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .bento-panel {
-  min-width: 0;
-  min-height: 0;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 240, 213, 0.13);
-  background:
-    linear-gradient(180deg, rgba(252, 247, 238, 0.92), rgba(231, 222, 211, 0.84)),
-    radial-gradient(circle at top right, rgba(255, 230, 188, 0.24), transparent 36%);
-  color: var(--ink);
-  box-shadow:
-    0 24px 64px rgba(3, 5, 9, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  background: linear-gradient(180deg, rgba(251, 244, 236, 0.82), rgba(235, 225, 212, 0.72));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 20px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 260ms ease, box-shadow 260ms ease;
 }
 
-.bento-panel h2,
-.bento-panel h3,
-.bento-panel p {
-  margin: 0;
+.bento-panel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 50px rgba(7, 7, 11, 0.24);
 }
 
-.bento-panel h2 {
-  color: #201811;
+.bento-panel h2, .bento-panel h3 {
   font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 1.58rem;
-  line-height: 1.16;
-  text-wrap: balance;
-}
-
-.bento-panel h3 {
-  color: #251b13;
-  font-size: 1.06rem;
-  line-height: 1.32;
+  margin: 0;
+  color: #3d2c21;
 }
 
 .bento-panel p {
   color: var(--ink-soft);
-  line-height: 1.64;
-}
-
-.bento-summary-panel {
-  grid-column: span 7;
-  display: grid;
-  gap: 14px;
-  align-content: center;
-  min-height: 260px;
-  background:
-    linear-gradient(135deg, rgba(27, 42, 45, 0.96), rgba(84, 55, 38, 0.92)),
-    radial-gradient(circle at 18% 18%, rgba(237, 171, 93, 0.22), transparent 34%);
-}
-
-.bento-summary-panel h2,
-.bento-summary-panel p,
-.bento-summary-panel .bento-panel-kicker {
-  color: #f9ead4;
-}
-
-.bento-summary-panel p {
-  color: rgba(249, 234, 212, 0.74);
-}
-
-.bento-next-compact {
-  grid-column: span 5;
-  display: grid;
-  gap: 14px;
-  align-content: center;
-  min-height: 260px;
-  background: linear-gradient(135deg, rgba(237, 228, 212, 0.94), rgba(213, 228, 221, 0.86));
-}
-
-.bento-panel .bento-panel-kicker {
-  color: #765136;
-}
-
-.bento-next-panel {
-  display: grid;
-  align-content: space-between;
-  gap: 18px;
-  min-height: 360px;
-  background:
-    linear-gradient(135deg, rgba(25, 46, 50, 0.96), rgba(82, 55, 37, 0.94)),
-    radial-gradient(circle at 14% 10%, rgba(236, 181, 102, 0.26), transparent 34%);
-  color: #f8ead4;
-}
-
-.bento-next-panel h2,
-.bento-next-panel p,
-.bento-next-panel .inline-link,
-.bento-next-panel .bento-panel-kicker {
-  color: #f8ead4;
-}
-
-.bento-next-panel p,
-.bento-next-panel dt {
-  color: rgba(248, 234, 212, 0.74);
-}
-
-.bento-detail-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
   margin: 0;
 }
 
-.bento-detail-list div {
-  padding: 12px;
-  border-radius: 8px;
-  background: rgba(255, 249, 239, 0.08);
-}
-
-.bento-detail-list dt {
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.bento-detail-list dd {
-  margin: 5px 0 0;
-  overflow-wrap: anywhere;
-  font-weight: 800;
-}
-
-.bento-stat-panel {
-  grid-column: span 5;
-  display: grid;
-  align-content: center;
-  gap: 14px;
-  background:
-    linear-gradient(135deg, rgba(237, 228, 212, 0.94), rgba(212, 226, 222, 0.86));
-}
-
-.bento-stat-panel strong {
-  color: #84492a;
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 4rem;
-  line-height: 0.9;
-}
-
-.bento-image-panel {
-  grid-column: span 5;
-  display: grid;
-  grid-template-columns: minmax(120px, 0.85fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: end;
-  min-height: 240px;
-  background:
-    linear-gradient(135deg, rgba(30, 44, 60, 0.94), rgba(84, 73, 54, 0.88));
-  color: #f6ead8;
-}
-
-.bento-image-panel img {
-  width: 100%;
-  height: 210px;
-  object-fit: contain;
-  object-position: center bottom;
-  filter: drop-shadow(0 26px 32px rgba(2, 3, 6, 0.32));
-}
-
-.bento-image-panel h2,
-.bento-image-panel .bento-panel-kicker {
-  color: #f6ead8;
-}
-
-.bento-mini-panel {
-  grid-column: span 3;
-  display: grid;
-  gap: 10px;
-  align-content: start;
-  min-height: 220px;
-}
-
-.bento-mini-panel svg {
-  color: #7a4a2f;
-}
-
-.tone-navy {
-  background: linear-gradient(135deg, rgba(228, 237, 235, 0.9), rgba(190, 211, 216, 0.82));
-}
-
-.tone-green {
-  background: linear-gradient(135deg, rgba(237, 242, 223, 0.92), rgba(207, 224, 201, 0.82));
-}
-
-.tone-amber {
-  background: linear-gradient(135deg, rgba(255, 239, 211, 0.94), rgba(230, 209, 178, 0.82));
-}
-
-.tone-rose {
-  background: linear-gradient(135deg, rgba(247, 230, 221, 0.94), rgba(225, 206, 213, 0.82));
+.bento-panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-dark);
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .home-faq-accordion {
-  display: grid;
-  gap: 14px;
-  padding: 24px;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(12, 15, 21, 0.82), rgba(34, 22, 18, 0.76)),
-    radial-gradient(circle at 78% 18%, rgba(220, 158, 88, 0.16), transparent 30%);
-  box-shadow: 0 22px 64px rgba(4, 6, 11, 0.24);
+  margin-top: 20px;
 }
 
 .home-faq-heading {
-  display: grid;
-  gap: 6px;
-}
-
-.home-faq-heading h2 {
-  margin: 0;
-  color: #fff1dc;
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 1.85rem;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .home-faq-list {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .home-faq-item {
-  border-radius: 8px;
-  background: rgba(255, 246, 232, 0.08);
-  border: 1px solid rgba(255, 241, 219, 0.09);
+  background: rgba(251, 244, 236, 0.82);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
 }
 
 .home-faq-item button {
   width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 0;
-  background: transparent;
-  color: #fff0dc;
-  text-align: left;
-  font-weight: 800;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-}
-
-.home-faq-item button span {
-  overflow-wrap: anywhere;
-}
-
-.home-faq-item svg {
-  transition: transform 180ms ease;
-}
-
-.home-faq-item.is-open svg {
-  transform: rotate(180deg);
+  font-weight: 700;
+  color: #3d2c21;
 }
 
 .home-faq-item p {
-  margin: 0;
-  padding: 0 16px 16px;
-  color: rgba(248, 234, 212, 0.72);
-  line-height: 1.72;
-}
-
-.bento-wide-panel {
-  grid-column: span 7;
-  display: grid;
-  gap: 16px;
-  background:
-    linear-gradient(135deg, rgba(248, 239, 226, 0.94), rgba(224, 213, 222, 0.84));
-}
-
-.bento-step-list {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bento-step-list li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid rgba(89, 70, 52, 0.13);
-  color: #35281d;
-  font-weight: 700;
-}
-
-.bento-step-list span {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: #263f3c;
-  color: #fff1d9;
-}
-
-.bento-members-panel {
-  grid-column: span 5;
-  display: grid;
-  gap: 16px;
-  background:
-    linear-gradient(135deg, rgba(31, 44, 42, 0.95), rgba(93, 58, 48, 0.9));
-  color: #f9ebd6;
-}
-
-.bento-members-panel h2,
-.bento-members-panel p,
-.bento-members-panel .bento-panel-kicker {
-  color: #f9ebd6;
-}
-
-.bento-members-panel img {
-  width: 100%;
-  max-height: 260px;
-  object-fit: contain;
-  object-position: center bottom;
-  align-self: end;
-}
-
-.bento-member-strip {
-  display: grid;
-  gap: 8px;
-}
-
-.bento-member-chip {
-  display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(255, 247, 233, 0.1);
-}
-
-.bento-member-chip strong,
-.bento-member-chip span {
-  overflow-wrap: anywhere;
-}
-
-.bento-member-chip span {
-  color: rgba(249, 235, 214, 0.72);
-  font-size: 0.88rem;
-}
-
-.home-parallax-band {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr);
-  gap: 22px;
-  align-items: center;
-  min-height: 420px;
-  padding: 36px;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(8, 15, 24, 0.88), rgba(43, 24, 28, 0.82)),
-    radial-gradient(circle at 76% 22%, rgba(230, 168, 91, 0.22), transparent 32%);
-  box-shadow: 0 28px 78px rgba(2, 4, 8, 0.28);
-  overflow: hidden;
-}
-
-.home-parallax-copy {
-  display: grid;
-  gap: 14px;
-  color: #f8ead4;
-}
-
-.home-parallax-copy h2,
-.home-parallax-copy p,
-.home-parallax-copy .bento-panel-kicker {
-  margin: 0;
-  color: #f8ead4;
-}
-
-.home-parallax-copy h2 {
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-  font-size: 2.2rem;
-  line-height: 1.16;
-}
-
-.home-parallax-copy p {
-  color: rgba(248, 234, 212, 0.76);
-  line-height: 1.8;
-}
-
-.home-parallax-cards {
-  display: grid;
-  gap: 12px;
-  transform: translate3d(0, calc(var(--page-scroll, 0) * -0.018px), 0);
-}
-
-.parallax-link-card {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #261c14;
-  background: rgba(255, 247, 235, 0.88);
-  box-shadow: 0 18px 36px rgba(4, 6, 10, 0.22);
-}
-
-.parallax-link-card span,
-.parallax-link-card small {
+  margin: 10px 0 0;
   color: var(--ink-soft);
-}
-
-.parallax-link-card strong {
-  overflow-wrap: anywhere;
-}
-
-.bento-faq-panel {
-  grid-column: span 7;
-  display: grid;
-  grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1fr);
-  gap: 18px;
-  align-items: end;
-}
-
-.bento-faq-panel img,
-.bento-join-visual img {
-  width: 100%;
-  max-height: 320px;
-  object-fit: contain;
-  object-position: center bottom;
-}
-
-.bento-question-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.bento-question-list a {
-  display: block;
-  padding: 10px 0;
-  border-top: 1px solid rgba(89, 70, 52, 0.14);
-  color: #2d2118;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.bento-join-visual {
-  grid-column: span 5;
-  display: grid;
-  gap: 16px;
-  background: linear-gradient(135deg, rgba(237, 226, 212, 0.94), rgba(222, 233, 225, 0.84));
-}
-
-.bento-join-visual div {
-  display: grid;
-  gap: 12px;
 }
 
 @keyframes cafeLampGlow {

@@ -33,14 +33,6 @@ export const PhotoMarquee = ({ items }: PhotoMarqueeProps) => {
 
   return (
     <section className="photo-marquee-shell" aria-label="イベント写真ギャラリー">
-      <div className="photo-marquee-heading">
-        <div>
-          <span className="eyebrow">Cafe Moments</span>
-          <h2>イベント写真ギャラリー</h2>
-        </div>
-        <p>あとから登録した写真が、上部でゆっくり流れます。</p>
-      </div>
-
       <div className="photo-marquee-window">
         <div className="photo-marquee-track">
           {loopItems.map((item, index) => (

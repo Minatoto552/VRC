@@ -17,6 +17,15 @@ interface SchedulePageProps {
   activities: Activity[];
 }
 
+const buildCalendarDayLabel = (isoDate: string, activities: Activity[]): string => {
+  if (activities.length === 0) {
+    return `${formatDate(isoDate)} 公開中の活動予定はありません`;
+  }
+
+  const titles = activities.map((activity) => activity.title).join('、');
+  return `${formatDate(isoDate)} ${activities.length}件: ${titles}`;
+};
+
 export const SchedulePage = ({ activities }: SchedulePageProps) => {
   const publicActivities = activities.filter((activity) => activity.isPublic);
   const [anchorDate, setAnchorDate] = useState(() => new Date());
@@ -118,21 +127,59 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
           </div>
 
           <div className="calendar-grid">
-            {grid.flat().map((day) => (
-              <button
-                key={day.isoDate}
-                type="button"
-                className={`calendar-day ${day.isCurrentMonth ? '' : 'is-muted'} ${
-                  day.isToday ? 'is-today' : ''
-                } ${day.activities.length > 0 ? 'has-activity' : ''} ${
-                  selectedIsoDate === day.isoDate ? 'is-selected' : ''
-                }`}
-                onClick={() => setSelectedIsoDate(day.isoDate)}
-              >
-                <span>{day.date.getDate()}</span>
-                {day.activities.length > 0 ? <small>{day.activities.length}件</small> : null}
-              </button>
-            ))}
+            {grid.flat().map((day) => {
+              const visibleActivities = day.activities.slice(0, 2);
+              const previewActivities = day.activities.slice(0, 3);
+              const hiddenActivityCount = Math.max(day.activities.length - visibleActivities.length, 0);
+
+              return (
+                <button
+                  key={day.isoDate}
+                  type="button"
+                  aria-label={buildCalendarDayLabel(day.isoDate, day.activities)}
+                  className={`calendar-day ${day.isCurrentMonth ? '' : 'is-muted'} ${
+                    day.isToday ? 'is-today' : ''
+                  } ${day.activities.length > 0 ? 'has-activity' : ''} ${
+                    selectedIsoDate === day.isoDate ? 'is-selected' : ''
+                  }`}
+                  onClick={() => setSelectedIsoDate(day.isoDate)}
+                >
+                  <span className="calendar-day-number">{day.date.getDate()}</span>
+
+                  {day.activities.length > 0 ? (
+                    <>
+                      <span className="calendar-day-events" aria-hidden="true">
+                        {visibleActivities.map((activity) => (
+                          <span key={activity.id} className="calendar-day-event-title" title={activity.title}>
+                            {activity.title}
+                          </span>
+                        ))}
+                        {hiddenActivityCount > 0 ? (
+                          <small className="calendar-day-more">+{hiddenActivityCount}件</small>
+                        ) : null}
+                      </span>
+
+                      <span className="calendar-day-popover" role="tooltip">
+                        <strong>{formatDate(day.isoDate)}</strong>
+                        {previewActivities.map((activity) => (
+                          <span key={activity.id} className="calendar-day-popover-item">
+                            <span className="calendar-day-popover-kind">
+                              {activityKindIcons[activity.kind]} {activityKindLabels[activity.kind]}
+                            </span>
+                            <b>{activity.title}</b>
+                            <small>{formatTimeRange(activity.startTime, activity.endTime)}</small>
+                            <span>{activity.description}</span>
+                          </span>
+                        ))}
+                        {day.activities.length > previewActivities.length ? (
+                          <em>ほか{day.activities.length - previewActivities.length}件あります。</em>
+                        ) : null}
+                      </span>
+                    </>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>

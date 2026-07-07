@@ -33,6 +33,8 @@ const bentoItems = [
     description:
       '夜のカフェBarをテーマにした、初めての人でも入りやすいVRChatイベントです。',
     icon: Coffee,
+    label: 'Concept',
+    meta: '世界観を確認',
     to: '/concept',
     tone: 'amber',
   },
@@ -40,6 +42,8 @@ const bentoItems = [
     title: '活動予定',
     description: '次回の開催日、時間、集合場所をスマホでも読みやすい形で確認できます。',
     icon: CalendarDays,
+    label: 'Schedule',
+    meta: '予定と詳細',
     to: '/schedule',
     tone: 'green',
   },
@@ -47,6 +51,8 @@ const bentoItems = [
     title: '部員紹介',
     description: '役職や担当、好きな飲み物など、イベント部の雰囲気が分かる紹介ページです。',
     icon: Users,
+    label: 'Cast',
+    meta: '公開中の部員',
     to: '/members',
     tone: 'navy',
   },
@@ -54,6 +60,8 @@ const bentoItems = [
     title: '入部案内',
     description: 'プロフィール確認から説明会、軽い面接までの流れを順番に案内します。',
     icon: DoorOpen,
+    label: 'Join',
+    meta: '6 steps',
     to: '/join',
     tone: 'rose',
   },
@@ -91,6 +99,9 @@ export const HomePage = ({ content }: HomePageProps) => {
   const heroImageY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 48]);
   const heroTextY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, -24]);
   const nextActivity = findNextActivity(content.activities);
+  const nextActivityDate = nextActivity
+    ? `${formatDate(nextActivity.date)} / ${formatTimeRange(nextActivity.startTime, nextActivity.endTime)}`
+    : '現在調整中';
 
   return (
     <div className="home-redesign-stack">
@@ -98,7 +109,7 @@ export const HomePage = ({ content }: HomePageProps) => {
 
       <motion.section
         ref={heroRef}
-        className="home-hero-bento"
+        className="home-hero-bento home-hero-editorial gsap-reveal"
         initial="hidden"
         animate="visible"
         variants={fadeUp}
@@ -107,11 +118,15 @@ export const HomePage = ({ content }: HomePageProps) => {
         <motion.div className="home-hero-copy" style={{ y: heroTextY }}>
           <span className="home-hero-chip">
             <LampDesk size={16} />
-            VRChat Cafe Bar 2026年3月同期会
+            VRChat Cafe Bar / 2026 March
           </span>
-          <h1>Event Café</h1>
+          <h1>
+            同期のみんなでつくる、
+            <span>少し特別なカフェ時間。</span>
+          </h1>
           <p>
-            同期のみんなでつくる、少し特別なカフェ時間。VRChat上で開くカフェ風Barイベントの活動予定、部員紹介、入部案内をひとつの流れで確認できます。
+            2026年3月同期会イベント部では、VRChat上でカフェ風のBarイベントを企画・運営しています。
+            活動予定、部員紹介、入部案内まで、迷わず見られるように整えました。
           </p>
           <div className="home-hero-actions">
             <MotionLink
@@ -131,39 +146,67 @@ export const HomePage = ({ content }: HomePageProps) => {
               入部方法を見る
             </MotionLink>
           </div>
+          <dl className="home-hero-proof" aria-label="サイト内の主要情報">
+            <div>
+              <dt>Next</dt>
+              <dd>{nextActivityDate}</dd>
+            </div>
+            <div>
+              <dt>Cast</dt>
+              <dd>{content.members.length}名公開中</dd>
+            </div>
+          </dl>
         </motion.div>
 
         <motion.div className="home-hero-visual" style={{ y: heroImageY }}>
-          <img
-            src={illustrations.welcomeGuide}
-            alt="Event Cafeへ案内するキャラクター"
-            className="home-hero-character"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-          />
+          <div className="home-hero-art-panel">
+            <span className="home-art-orbit home-art-orbit-one" aria-hidden="true" />
+            <span className="home-art-orbit home-art-orbit-two" aria-hidden="true" />
+            <img
+              src={illustrations.welcomeGuide}
+              alt="Event Cafeへ案内するキャラクター"
+              className="home-hero-character"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
+          </div>
+          <div className="home-floating-card home-floating-card-next" aria-hidden="true">
+            <span>Next Event</span>
+            <strong>{nextActivity?.title ?? '調整中'}</strong>
+          </div>
+          <div className="home-floating-card home-floating-card-menu" aria-hidden="true">
+            <span>Menu</span>
+            <strong>Cafe / Bar / VRChat</strong>
+          </div>
         </motion.div>
       </motion.section>
 
       <motion.section
-        className="home-bento-grid home-bento-grid-simple"
+        className="home-bento-grid home-bento-grid-simple home-bento-editorial gsap-stagger"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.18 }}
         transition={{ staggerChildren: 0.07 }}
       >
-        <motion.article variants={fadeUp} className="bento-panel bento-summary-panel">
+        <motion.article variants={fadeUp} className="bento-panel bento-summary-panel gsap-card">
           <div className="bento-panel-kicker">
             <MoonStar size={18} />
-            Tonight
+            Event Café
           </div>
           <h2>見たい情報へ、少ないステップで。</h2>
           <p>
-            カードの数を絞り、主要な導線だけを大きく配置しました。予定、部員、入部案内へすぐ移動できます。
+            予定、部員、入部案内をそれぞれ独立したカードに整理しました。余白を広く取り、
+            スマホでもPCでも読みやすい導線にしています。
           </p>
+          <div className="bento-mini-metrics" aria-label="サイト概要">
+            <span>Mobile first</span>
+            <span>Warm cafe tone</span>
+            <span>Public guide</span>
+          </div>
         </motion.article>
 
-        <motion.article variants={fadeUp} className="bento-panel bento-next-compact">
+        <motion.article variants={fadeUp} className="bento-panel bento-next-compact gsap-card">
           <div className="bento-panel-kicker">
             <CalendarDays size={18} />
             Next
@@ -187,14 +230,20 @@ export const HomePage = ({ content }: HomePageProps) => {
           </Link>
         </motion.article>
 
-        {bentoItems.map(({ description, icon: Icon, title, to, tone }) => (
+        {bentoItems.map(({ description, icon: Icon, label, meta, title, to, tone }) => (
           <motion.article
             key={title}
             variants={fadeUp}
-            className={`bento-panel bento-mini-panel tone-${tone}`}
+            className={`bento-panel bento-mini-panel tone-${tone} gsap-card`}
             whileHover={reduceMotion ? undefined : { y: -4 }}
           >
-            <Icon size={22} />
+            <div className="bento-mini-topline">
+              <span>{label}</span>
+              <span>{meta}</span>
+            </div>
+            <div className="bento-icon-shell">
+              <Icon size={22} />
+            </div>
             <h3>{title}</h3>
             <p>{description}</p>
             <Link to={to} className="inline-link">
@@ -204,8 +253,25 @@ export const HomePage = ({ content }: HomePageProps) => {
         ))}
       </motion.section>
 
+      <section className="home-story-split gsap-reveal">
+        <div className="home-story-copy">
+          <span className="bento-panel-kicker">Flow</span>
+          <h2>カフェの入口から、必要な案内まで自然につながる構成。</h2>
+          <p>
+            上部では写真ギャラリーで雰囲気を伝え、中央では活動予定とメンバー情報へ誘導します。
+            最後に入部案内とFAQで不安を残さないようにしています。
+          </p>
+        </div>
+        <div className="home-story-board" aria-hidden="true">
+          <span>01 Atmosphere</span>
+          <span>02 Schedule</span>
+          <span>03 Members</span>
+          <span>04 Join</span>
+        </div>
+      </section>
+
       <motion.section
-        className="home-faq-accordion"
+        className="home-faq-accordion gsap-reveal"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.22 }}

@@ -36,7 +36,10 @@ export const SiteLayout = ({ content, loading, runtimeNotice, children }: SiteLa
         <header className={`site-header ${isAdminRoute ? 'is-admin-header' : ''}`}>
           <NavLink to="/" className="brand-mark" onClick={() => setMenuOpen(false)}>
             <Sparkles size={18} aria-hidden="true" />
-            <span>{content.settings.siteName}</span>
+            <span className="brand-copy" aria-label={content.settings.siteName}>
+              <strong>Event Café 2026</strong>
+              <small>2026年3月同期会</small>
+            </span>
           </NavLink>
 
           {isAdminRoute ? (

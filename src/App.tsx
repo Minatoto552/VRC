@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 
 import type { PublicContent } from '../shared/models';
+import { GsapPageMotion } from './components/GsapPageMotion';
 import { SiteLayout } from './components/SiteLayout';
-import { loadPublicContent } from './lib/api';
+import { loadPublicContent, PUBLIC_CONTENT_UPDATED_EVENT } from './lib/api';
 import { samplePublicContent } from './lib/sample-data';
 import { AdminPage } from './pages/AdminPage';
 import { ConceptPage } from './pages/ConceptPage';
@@ -22,37 +23,49 @@ const App = () => {
   useEffect(() => {
     let mounted = true;
 
-    void loadPublicContent()
-      .then((nextContent) => {
-        if (!mounted) {
-          return;
-        }
-
-        setContent(nextContent);
-        setRuntimeNotice(null);
-      })
-      .catch((error) => {
-        if (!mounted) {
-          return;
-        }
-
-        setContent(samplePublicContent);
-        setRuntimeNotice(
-          error instanceof Error
-            ? `${error.message} 公開ページはサンプル表示へ切り替えました。`
-            : '公開データの読み込みに失敗したため、サンプル表示へ切り替えました。',
-        );
-      })
-      .finally(() => {
+    const refreshPublicContent = () => {
+      const loadingFallbackId = window.setTimeout(() => {
         if (mounted) {
           setLoading(false);
         }
-      });
+      }, 900);
+
+      void loadPublicContent()
+        .then((nextContent) => {
+          if (!mounted) {
+            return;
+          }
+
+          setContent(nextContent);
+          setRuntimeNotice(null);
+        })
+        .catch(() => {
+          if (!mounted) {
+            return;
+          }
+
+          setContent(samplePublicContent);
+          setRuntimeNotice(null);
+        })
+        .finally(() => {
+          window.clearTimeout(loadingFallbackId);
+
+          if (mounted) {
+            setLoading(false);
+          }
+        });
+    };
+
+    setLoading(true);
+    refreshPublicContent();
+
+    window.addEventListener(PUBLIC_CONTENT_UPDATED_EVENT, refreshPublicContent);
 
     return () => {
       mounted = false;
+      window.removeEventListener(PUBLIC_CONTENT_UPDATED_EVENT, refreshPublicContent);
     };
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -183,6 +196,7 @@ const App = () => {
 
   return (
     <SiteLayout content={content} loading={loading} runtimeNotice={runtimeNotice}>
+      <GsapPageMotion />
       <Routes>
         <Route path="/" element={<HomePage content={content} />} />
         <Route path="/concept" element={<ConceptPage content={content} />} />

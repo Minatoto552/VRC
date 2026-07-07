@@ -2,8 +2,6 @@ import { ArrowRight, Coffee, LampDesk, MoonStar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { PublicContent } from '../../shared/models';
-import { illustrations } from '../assets/illustrations';
-import { PageIntro } from '../components/PageIntro';
 
 interface ConceptPageProps {
   content: PublicContent;
@@ -40,20 +38,56 @@ const visitFlow = [
   '興味があれば入部案内ページから説明会までの流れを確認する',
 ] as const;
 
+const cafeMenuGroups = [
+  {
+    category: 'Cafe',
+    title: 'カフェメニュー',
+    items: ['カフェラテ', 'アイスコーヒー', 'ほうじ茶ラテ'],
+    note: '落ち着いて話せる、やさしい雰囲気のメニュー名を想定しています。',
+  },
+  {
+    category: 'Bar',
+    title: 'Bar風メニュー',
+    items: ['ノンアルモクテル', '琥珀ソーダ', '夜景レモネード'],
+    note: '高級すぎず、初参加でも頼みやすい名前に整えます。',
+  },
+  {
+    category: 'Event',
+    title: 'イベント演出',
+    items: ['本日のおすすめ', '説明会プレート', '記念フォトタイム'],
+    note: '実際の提供ではなく、VRChat内の案内・演出として使う想定です。',
+  },
+] as const;
+
 export const ConceptPage = ({ content }: ConceptPageProps) => (
   <div className="page-stack">
-    <PageIntro
-      eyebrow="Space Concept"
-      title="会場案内"
-      description="夜のカフェBarらしい親しみやすさと、VRChatならではの少し幻想的な空気を両立させるために、公開サイト全体をひとつの店内体験として設計しています。"
-      imageSrc={illustrations.welcomeGuide}
-      imageAlt="会場案内を示すカフェ風イラスト"
-      caption="Night Cafe Direction"
-      chips={['木製カウンター', '窓際の夜景', 'スマートフォン優先の閲覧体験']}
-    >
-      <strong>このページで分かること</strong>
-      <p>入口、カウンター、ラウンジの役割と、公開サイトをどう回ると迷いにくいかをまとめています。</p>
-    </PageIntro>
+    <section className="section-card concept-menu-card">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">Cafe Menu</span>
+          <h1>メニュー補足</h1>
+          <p>
+            Event Caféの雰囲気を伝えるための仮メニューです。実際の提供内容や演出は、
+            当日の運営案内に合わせて調整します。
+          </p>
+        </div>
+      </div>
+
+      <div className="concept-menu-grid">
+        {cafeMenuGroups.map((group) => (
+          <article key={group.category} className="info-card concept-menu-panel">
+            <span className="chip subtle-chip">{group.category}</span>
+            <h2>{group.title}</h2>
+            <ul className="concept-menu-list">
+              {group.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <p>{group.note}</p>
+          </article>
+        ))}
+      </div>
+    </section>
 
     <section className="section-card">
       <div className="section-heading">

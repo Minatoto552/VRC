@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { getIdTokenResult, onIdTokenChanged } from 'firebase/auth';
 
-import { runtimeMode } from '../lib/firebase';
+import { firebaseServices, runtimeMode } from '../lib/firebase';
 import { isLocalAdminSignedIn, LOCAL_ADMIN_SESSION_EVENT } from '../lib/local-admin';
 
 interface AuthContextValue {
@@ -16,11 +17,41 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAdminSignedIn, setIsAdminSignedIn] = useState<boolean>(() => isLocalAdminSignedIn());
+  const [authReady, setAuthReady] = useState(!firebaseServices.auth);
+  const [isFirebaseAdmin, setIsFirebaseAdmin] = useState(false);
+  const [isLocalAdmin, setIsLocalAdmin] = useState<boolean>(() => isLocalAdminSignedIn());
+
+  useEffect(() => {
+    if (!firebaseServices.auth) {
+      setAuthReady(true);
+      return undefined;
+    }
+
+    return onIdTokenChanged(firebaseServices.auth, (user) => {
+      setAuthReady(false);
+
+      if (!user) {
+        setIsFirebaseAdmin(false);
+        setAuthReady(true);
+        return;
+      }
+
+      void getIdTokenResult(user, true)
+        .then((tokenResult) => {
+          setIsFirebaseAdmin(tokenResult.claims['admin'] === true);
+        })
+        .catch(() => {
+          setIsFirebaseAdmin(false);
+        })
+        .finally(() => {
+          setAuthReady(true);
+        });
+    });
+  }, []);
 
   useEffect(() => {
     const syncSession = () => {
-      setIsAdminSignedIn(isLocalAdminSignedIn());
+      setIsLocalAdmin(isLocalAdminSignedIn());
     };
 
     window.addEventListener(LOCAL_ADMIN_SESSION_EVENT, syncSession);
@@ -32,13 +63,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  const isAdminSignedIn = isFirebaseAdmin || isLocalAdmin;
+
   const value = useMemo<AuthContextValue>(
     () => ({
-      authReady: true,
+      authReady,
       isAdminSignedIn,
       runtimeMode,
     }),
-    [isAdminSignedIn],
+    [authReady, isAdminSignedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

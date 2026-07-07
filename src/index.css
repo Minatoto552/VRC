@@ -3309,7 +3309,7 @@ body {
 .site-panel {
   min-height: calc(100vh - clamp(16px, 4.4vw, 56px));
   overflow: hidden;
-  border: none;
+  border: 1px solid rgba(29, 24, 18, 0.12);
   border-radius: clamp(24px, 4vw, 54px);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.62) 1px, transparent 1px),
@@ -3345,8 +3345,8 @@ body {
 }
 
 .site-header {
-  top: 4px;
-  margin-bottom: clamp(24px, 3vw, 40px);
+  top: 12px;
+  margin-bottom: clamp(16px, 2vw, 28px);
   padding: 12px;
   border: 1px solid rgba(22, 18, 12, 0.08);
   border-radius: 24px;

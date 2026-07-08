@@ -8,29 +8,33 @@ service cloud.firestore {
 
     match /activities/{activityId} {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /members/{memberId} {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /siteSettings/public {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /lotteryEntries/{entryId} {
-      allow read, create, update, delete: if true;
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     match /lotteryDraws/{drawId} {
-      allow read, create, update, delete: if true;
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     match /adminAuditLogs/{logId} {
-      allow read, create, update, delete: if true;
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     match /{document=**} {

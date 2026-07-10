@@ -1,4 +1,4 @@
-export type PhotoCategoryId = 'cast-event' | 'cast-daily' | 'poster-archive';
+export type PhotoCategoryId = 'home-hero' | 'cast-event' | 'cast-daily' | 'poster-archive';
 
 export interface ManagedPhotoAsset {
   id: string;
@@ -22,9 +22,21 @@ export interface PhotoCategoryDefinition {
   layout: 'landscape' | 'portrait';
   route: string;
   previewLimit: number;
+  showInArchive: boolean;
 }
 
 export const photoCategories: PhotoCategoryDefinition[] = [
+  {
+    id: 'home-hero',
+    title: 'ホーム上部スライド',
+    shortTitle: 'ホームスライド',
+    description: 'サイトを開いて最初に流れる、横長の写真スライドです。',
+    accent: 'sage',
+    layout: 'landscape',
+    route: '/photos/home-hero',
+    previewLimit: 8,
+    showInArchive: false,
+  },
   {
     id: 'cast-event',
     title: 'キャストのイベント写真',
@@ -34,6 +46,7 @@ export const photoCategories: PhotoCategoryDefinition[] = [
     layout: 'landscape',
     route: '/photos/cast-event',
     previewLimit: 8,
+    showInArchive: true,
   },
   {
     id: 'cast-daily',
@@ -44,6 +57,7 @@ export const photoCategories: PhotoCategoryDefinition[] = [
     layout: 'landscape',
     route: '/photos/cast-daily',
     previewLimit: 8,
+    showInArchive: true,
   },
   {
     id: 'poster-archive',
@@ -54,8 +68,11 @@ export const photoCategories: PhotoCategoryDefinition[] = [
     layout: 'portrait',
     route: '/photos/poster-archive',
     previewLimit: 6,
+    showInArchive: true,
   },
 ] as const;
+
+export const archivePhotoCategories = photoCategories.filter((category) => category.showInArchive);
 
 export const PHOTO_LIBRARY_UPDATED_EVENT = 'shikitsukika-photo-library-updated';
 

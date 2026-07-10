@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 
 import { ManagedPhotoFrame } from '../components/ManagedPhotoFrame';
 import {
+  archivePhotoCategories,
   loadManagedPhotos,
   PHOTO_LIBRARY_UPDATED_EVENT,
-  photoCategories,
   type ManagedPhotoAsset,
 } from '../lib/photo-library';
 
@@ -34,11 +34,11 @@ export const PhotosPage = () => {
   const grouped = useMemo(
     () =>
       Object.fromEntries(
-        photoCategories.map((category) => [
+        archivePhotoCategories.map((category) => [
           category.id,
           photos.filter((photo) => photo.category === category.id).slice(0, category.previewLimit),
         ]),
-      ) as Record<(typeof photoCategories)[number]['id'], ManagedPhotoAsset[]>,
+      ) as Record<(typeof archivePhotoCategories)[number]['id'], ManagedPhotoAsset[]>,
     [photos],
   );
 
@@ -56,7 +56,7 @@ export const PhotosPage = () => {
         </div>
       </section>
 
-      {photoCategories.map((category) => {
+      {archivePhotoCategories.map((category) => {
         const categoryPhotos = grouped[category.id];
 
         return (

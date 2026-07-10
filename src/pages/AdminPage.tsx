@@ -87,7 +87,7 @@ export const AdminPage = () => {
   const [memberDraft, setMemberDraft] = useState<MemberProfile>(createBlankMember());
   const [settingsDraft, setSettingsDraft] = useState<SiteSettings | null>(null);
   const [photoLibrary, setPhotoLibrary] = useState<ManagedPhotoAsset[]>(() => loadManagedPhotos());
-  const [uploadCategory, setUploadCategory] = useState<PhotoCategoryId>('cast-event');
+  const [uploadCategory, setUploadCategory] = useState<PhotoCategoryId>('home-hero');
 
   const refreshAdminData = async () => {
     const data = await loadAdminContent();

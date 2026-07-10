@@ -35,7 +35,7 @@ export const PhotoMarquee = ({ items }: PhotoMarqueeProps) => {
     let cancelled = false;
 
     const resolveItems = async () => {
-      const nextManagedPhotos = loadManagedPhotosByCategory('cast-event');
+      const nextManagedPhotos = loadManagedPhotosByCategory('home-hero');
 
       if (nextManagedPhotos.length > 0) {
         if (!cancelled) {

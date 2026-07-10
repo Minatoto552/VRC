@@ -30,7 +30,7 @@ export const PageIntro = ({
         <h1>{title}</h1>
         <p>{description}</p>
         {chips && chips.length > 0 ? (
-          <div className="page-intro-chip-row" aria-label={`${title}の案内ポイント`}>
+          <div className="page-intro-chip-row" aria-label={`${title}の補足情報`}>
             {chips.map((chip) => (
               <span key={chip} className="page-intro-chip">
                 {chip}

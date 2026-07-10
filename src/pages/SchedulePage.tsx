@@ -17,13 +17,13 @@ interface SchedulePageProps {
   activities: Activity[];
 }
 
-const buildCalendarDayLabel = (isoDate: string, activities: Activity[]): string => {
-  if (activities.length === 0) {
+const buildCalendarDayLabel = (isoDate: string, activitiesForDay: Activity[]): string => {
+  if (activitiesForDay.length === 0) {
     return `${formatDate(isoDate)} 公開中の活動予定はありません`;
   }
 
-  const titles = activities.map((activity) => activity.title).join('、');
-  return `${formatDate(isoDate)} ${activities.length}件: ${titles}`;
+  const titles = activitiesForDay.map((activity) => activity.title).join(' / ');
+  return `${formatDate(isoDate)} ${activitiesForDay.length}件: ${titles}`;
 };
 
 export const SchedulePage = ({ activities }: SchedulePageProps) => {
@@ -45,13 +45,13 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
       <PageIntro
         eyebrow="Activity Calendar"
         title="活動予定カレンダー"
-        description="黒板メニューを見るような感覚で、次回の活動や月ごとの予定をひと目で確認できます。スマートフォンでも日付と内容が追いやすく、重要な予定が埋もれにくい配置に整えています。"
+        description="月表示で次回の活動や説明会日程を確認できるページです。日付ごとのタイトル、概要、対象者を見ながら予定を把握できます。"
         imageSrc={illustrations.scheduleGuide}
-        imageAlt="予定表を案内するカフェ風イラスト"
+        imageAlt="予定表を案内するキャラクターイラスト"
         caption="Schedule Scene"
         chips={[
-          nextActivity ? `次回予定: ${formatDate(nextActivity.date)}` : '次回予定は現在調整中です',
-          `公開中の予定: ${publicActivities.length}件`,
+          nextActivity ? `次回予定: ${formatDate(nextActivity.date)}` : '次回予定は現在調整中',
+          `公開中の活動: ${publicActivities.length}件`,
         ]}
       >
         <strong>今月の見どころ</strong>
@@ -63,17 +63,17 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
           <article className="metric-card">
             <span>Next Date</span>
             <strong>{nextActivity ? formatDate(nextActivity.date) : '調整中'}</strong>
-            <p>次回予定が決まっている場合は、トップとカレンダー上部の両方から確認できます。</p>
+            <p>次回の公開予定が決まっている場合は、トップとカレンダー上部の両方に表示します。</p>
           </article>
           <article className="metric-card">
             <span>Public Events</span>
             <strong>{publicActivities.length}件</strong>
-            <p>公開対象の予定だけを表示し、一般の閲覧者が迷わないよう絞り込んでいます。</p>
+            <p>公開中の活動だけを一覧化しているため、一般向けに見やすい予定表になっています。</p>
           </article>
           <article className="metric-card">
             <span>How to Use</span>
             <strong>日付を選択</strong>
-            <p>気になる日を押すだけで、下のカードが切り替わり、その日の内容を確認できます。</p>
+            <p>気になる日を押すだけで、タイトルや概要、対象者、集合場所をすぐ確認できます。</p>
           </article>
         </div>
       </section>
@@ -172,7 +172,7 @@ export const SchedulePage = ({ activities }: SchedulePageProps) => {
                           </span>
                         ))}
                         {day.activities.length > previewActivities.length ? (
-                          <em>ほか{day.activities.length - previewActivities.length}件あります。</em>
+                          <em>ほか {day.activities.length - previewActivities.length} 件あります</em>
                         ) : null}
                       </span>
                     </>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Activity, MemberProfile, SiteSettings } from '../../shared/models';
-import { AdminGuard } from '../components/AdminGuard';
 import { useAuth } from '../auth/AuthContext';
+import { AdminGuard } from '../components/AdminGuard';
+import { ManagedPhotoFrame } from '../components/ManagedPhotoFrame';
 import { buildAvatarImage } from '../lib/avatar';
 import {
   deleteActivity,
@@ -14,29 +15,26 @@ import {
   upsertActivity,
   upsertMember,
 } from '../lib/api';
+import { activityKindLabels, formatDateTime } from '../lib/format';
+import {
+  deleteManagedPhoto,
+  importManagedPhotos,
+  loadManagedPhotos,
+  PHOTO_LIBRARY_UPDATED_EVENT,
+  photoCategories,
+  type ManagedPhotoAsset,
+  type PhotoCategoryId,
+  upsertManagedPhoto,
+} from '../lib/photo-library';
 
-const adminTabs = ['dashboard', 'activities', 'members', 'settings'] as const;
-
+const adminTabs = ['dashboard', 'activities', 'members', 'photos', 'settings'] as const;
 type AdminTab = (typeof adminTabs)[number];
 type AdminContent = Awaited<ReturnType<typeof loadAdminContent>>;
 
-const activityKindOptions = [
-  { value: 'public-event', label: 'お客様向けイベント' },
-  { value: 'member-meeting', label: '部員向けミーティング' },
-  { value: 'briefing', label: '説明会' },
-  { value: 'interview', label: '入部面接' },
-  { value: 'rehearsal', label: 'リハーサル' },
-  { value: 'other', label: 'その他' },
-] as const;
-
-const formatDateTime = (value: string): string =>
-  new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+const activityKindOptions = Object.entries(activityKindLabels).map(([value, label]) => ({
+  value: value as Activity['kind'],
+  label,
+}));
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -88,11 +86,18 @@ export const AdminPage = () => {
   const [activityDraft, setActivityDraft] = useState<Activity>(createBlankActivity());
   const [memberDraft, setMemberDraft] = useState<MemberProfile>(createBlankMember());
   const [settingsDraft, setSettingsDraft] = useState<SiteSettings | null>(null);
+  const [photoLibrary, setPhotoLibrary] = useState<ManagedPhotoAsset[]>(() => loadManagedPhotos());
+  const [uploadCategory, setUploadCategory] = useState<PhotoCategoryId>('cast-event');
 
   const refreshAdminData = async () => {
     const data = await loadAdminContent();
     setAdminData(data);
     setSettingsDraft(data.settings);
+    setErrorMessage('');
+  };
+
+  const refreshPhotoLibrary = () => {
+    setPhotoLibrary(loadManagedPhotos());
   };
 
   useEffect(() => {
@@ -104,12 +109,24 @@ export const AdminPage = () => {
     void refreshAdminData().catch((error) => {
       setErrorMessage(error instanceof Error ? error.message : '管理データの取得に失敗しました。');
     });
+    refreshPhotoLibrary();
   }, [isAdminSignedIn]);
+
+  useEffect(() => {
+    const refresh = () => refreshPhotoLibrary();
+    window.addEventListener(PHOTO_LIBRARY_UPDATED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+
+    return () => {
+      window.removeEventListener(PHOTO_LIBRARY_UPDATED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
 
   const activityCount = adminData?.activities.length ?? 0;
   const publicActivityCount = adminData?.activities.filter((activity) => activity.isPublic).length ?? 0;
   const memberCount = adminData?.members.length ?? 0;
-  const publicMemberCount = adminData?.members.filter((member) => member.isPublic).length ?? 0;
+  const photoCount = photoLibrary.length;
 
   const sortedMembers = useMemo(
     () =>
@@ -122,6 +139,15 @@ export const AdminPage = () => {
   );
 
   const recentAudits = useMemo(() => adminData?.audits.slice(0, 8) ?? [], [adminData?.audits]);
+
+  const groupedPhotos = useMemo(
+    () =>
+      photoCategories.map((category) => ({
+        category,
+        items: photoLibrary.filter((photo) => photo.category === category.id),
+      })),
+    [photoLibrary],
+  );
 
   const resetActivityDraft = () => {
     setActivityDraft(createBlankActivity());
@@ -139,7 +165,7 @@ export const AdminPage = () => {
     try {
       await loginAsAdmin(password);
       setPassword('');
-      setInfoMessage('管理者としてログインしました。');
+      setInfoMessage('ログインしました。');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'ログインに失敗しました。');
     } finally {
@@ -258,6 +284,42 @@ export const AdminPage = () => {
     }
   };
 
+  const handlePhotoImport = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    setErrorMessage('');
+    setInfoMessage('');
+
+    try {
+      const imported = await importManagedPhotos(uploadCategory, fileList);
+      refreshPhotoLibrary();
+      setInfoMessage(`${imported.length}枚の写真を追加しました。`);
+    } catch {
+      setErrorMessage('写真の読み込みに失敗しました。');
+    }
+  };
+
+  const handlePhotoChange = (photo: ManagedPhotoAsset, patch: Partial<ManagedPhotoAsset>) => {
+    upsertManagedPhoto({
+      ...photo,
+      ...patch,
+    });
+    refreshPhotoLibrary();
+  };
+
+  const handlePhotoDelete = (photoId: string) => {
+    const confirmed = window.confirm('この写真を削除しますか？');
+    if (!confirmed) {
+      return;
+    }
+
+    deleteManagedPhoto(photoId);
+    refreshPhotoLibrary();
+    setInfoMessage('写真を削除しました。');
+  };
+
   const guardFallback = (
     <section className="section-card admin-login-card admin-console-card">
       <div className="section-heading">
@@ -268,8 +330,8 @@ export const AdminPage = () => {
       </div>
 
       <p>
-        現在はローカル管理モードです。Firebase を使わず、このブラウザ内に保存される管理データへ直接ログインします。
-        {runtimeMode === 'sample' ? ' 管理用パスワードは 1112 です。' : ''}
+        現在はローカルパスワード方式です。このブラウザ内に保存される運営画面へログインできます。
+        {runtimeMode === 'sample' ? ' 動作確認用パスワードは 1112 です。' : ''}
       </p>
 
       <label className="field-label" htmlFor="admin-password">
@@ -294,7 +356,7 @@ export const AdminPage = () => {
           disabled={!authReady || loggingIn}
           onClick={() => void handleLogin()}
         >
-          {loggingIn ? '認証中...' : 'ログイン'}
+          {loggingIn ? 'ログイン中...' : 'ログイン'}
         </button>
       </div>
 
@@ -337,7 +399,9 @@ export const AdminPage = () => {
                     ? '活動予定'
                     : tab === 'members'
                       ? '部員管理'
-                      : 'サイト設定'}
+                      : tab === 'photos'
+                        ? '写真管理'
+                        : 'サイト設定'}
               </button>
             ))}
           </div>
@@ -345,18 +409,16 @@ export const AdminPage = () => {
           {errorMessage ? <p className="error-text">{errorMessage}</p> : null}
           {infoMessage ? <p className="success-text">{infoMessage}</p> : null}
 
-          {!adminData ? (
-            <p className="empty-message">管理データを読み込んでいます...</p>
-          ) : null}
+          {!adminData ? <p className="empty-message">管理データを読み込んでいます...</p> : null}
 
           {adminData && activeTab === 'dashboard' ? (
             <div className="dashboard-grid">
               <article className="metric-card">
-                <span>活動予定件数</span>
+                <span>活動予定総数</span>
                 <strong>{activityCount}</strong>
               </article>
               <article className="metric-card">
-                <span>公開中活動</span>
+                <span>公開中の活動</span>
                 <strong>{publicActivityCount}</strong>
               </article>
               <article className="metric-card">
@@ -364,11 +426,11 @@ export const AdminPage = () => {
                 <strong>{memberCount}</strong>
               </article>
               <article className="metric-card">
-                <span>公開中部員</span>
-                <strong>{publicMemberCount}</strong>
+                <span>管理写真枚数</span>
+                <strong>{photoCount}</strong>
               </article>
               <article className="detail-card full-span">
-                <h2>基本設定</h2>
+                <h2>現在の公開設定</h2>
                 <dl className="stacked-details compact-details">
                   <div>
                     <dt>サイト名</dt>
@@ -580,12 +642,7 @@ export const AdminPage = () => {
                   <div className="card-grid">
                     {adminData.activities.map((activity) => (
                       <article key={activity.id} className="detail-card">
-                        <span className="chip subtle-chip">
-                          {
-                            activityKindOptions.find((option) => option.value === activity.kind)
-                              ?.label
-                          }
-                        </span>
+                        <span className="chip subtle-chip">{activityKindLabels[activity.kind]}</span>
                         <h3>{activity.title}</h3>
                         <p>{activity.description}</p>
                         <dl className="stacked-details compact-details">
@@ -775,7 +832,7 @@ export const AdminPage = () => {
                       }))
                     }
                   />
-                  部長・副部長として強調表示する
+                  部長 / 副部長として強調表示する
                 </label>
 
                 <div className="form-actions">
@@ -850,6 +907,168 @@ export const AdminPage = () => {
                           </button>
                         </div>
                       </article>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </div>
+          ) : null}
+
+          {adminData && activeTab === 'photos' ? (
+            <div className="admin-grid">
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Photo Uploader</span>
+                    <h2>写真を一括登録</h2>
+                  </div>
+                </div>
+
+                <div className="form-grid">
+                  <label>
+                    登録先カテゴリ
+                    <select
+                      className="text-input"
+                      value={uploadCategory}
+                      onChange={(event) => setUploadCategory(event.target.value as PhotoCategoryId)}
+                    >
+                      {photoCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    画像ファイル
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="text-input"
+                      onChange={(event) => {
+                        void handlePhotoImport(event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <p className="muted-note">
+                  URL入力ではなく、フォルダから選んだ画像をそのまま登録できます。登録後は各カードで拡大率と表示位置を調整してください。
+                </p>
+              </article>
+
+              <article className="detail-card">
+                <div className="section-heading compact-heading">
+                  <div>
+                    <span className="eyebrow">Managed Photos</span>
+                    <h2>カテゴリ別の写真一覧</h2>
+                  </div>
+                </div>
+
+                {photoLibrary.length === 0 ? (
+                  <p className="empty-message">まだ写真は登録されていません。</p>
+                ) : (
+                  <div className="admin-photo-sections">
+                    {groupedPhotos.map(({ category, items }) => (
+                      <section key={category.id} className="admin-photo-section">
+                        <div className="admin-photo-section-head">
+                          <div>
+                            <strong>{category.title}</strong>
+                            <p>{category.description}</p>
+                          </div>
+                          <span className="chip subtle-chip">{items.length}枚</span>
+                        </div>
+
+                        {items.length === 0 ? (
+                          <p className="empty-message">このカテゴリにはまだ写真がありません。</p>
+                        ) : (
+                          <div className="admin-photo-grid">
+                            {items.map((photo) => (
+                              <article key={photo.id} className="admin-photo-card">
+                                <ManagedPhotoFrame photo={photo} className="admin-photo-preview" />
+                                <div className="admin-photo-fields">
+                                  <label>
+                                    タイトル
+                                    <input
+                                      className="text-input"
+                                      value={photo.title}
+                                      onChange={(event) =>
+                                        handlePhotoChange(photo, { title: event.target.value })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    説明
+                                    <textarea
+                                      className="text-area admin-photo-description"
+                                      value={photo.description}
+                                      onChange={(event) =>
+                                        handlePhotoChange(photo, { description: event.target.value })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    拡大率: {photo.zoom.toFixed(2)}
+                                    <input
+                                      type="range"
+                                      min="1"
+                                      max="2.6"
+                                      step="0.05"
+                                      value={photo.zoom}
+                                      onChange={(event) =>
+                                        handlePhotoChange(photo, {
+                                          zoom: Number(event.target.value),
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    横位置: {Math.round(photo.focalX)}%
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      step="1"
+                                      value={photo.focalX}
+                                      onChange={(event) =>
+                                        handlePhotoChange(photo, {
+                                          focalX: Number(event.target.value),
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    縦位置: {Math.round(photo.focalY)}%
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      step="1"
+                                      value={photo.focalY}
+                                      onChange={(event) =>
+                                        handlePhotoChange(photo, {
+                                          focalY: Number(event.target.value),
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <div className="form-actions">
+                                    <button
+                                      type="button"
+                                      className="secondary-button inline-button"
+                                      onClick={() => handlePhotoDelete(photo.id)}
+                                    >
+                                      削除
+                                    </button>
+                                  </div>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        )}
+                      </section>
                     ))}
                   </div>
                 )}

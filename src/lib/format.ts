@@ -11,17 +11,17 @@ export const activityKindLabels: Record<ActivityKind, string> = {
 
 export const activityKindIcons: Record<ActivityKind, string> = {
   'public-event': '☕',
-  'member-meeting': '📝',
-  briefing: '📋',
-  interview: '🤝',
-  rehearsal: '🎧',
+  'member-meeting': '🗂',
+  briefing: 'ℹ',
+  interview: '🗣',
+  rehearsal: '🎭',
   other: '✦',
 };
 
 export const lotteryStatusLabels: Record<LotteryStatus, string> = {
   open: '受付中',
   paused: '一時停止中',
-  closed: '抽選終了',
+  closed: '終了',
 };
 
 export const formatDate = (date: string): string =>

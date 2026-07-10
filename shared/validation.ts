@@ -66,10 +66,7 @@ export const siteSettingsSchema = z.object({
   updatedAt: z.string().min(1),
 });
 
-export const winnerCountSchema = z
-  .number()
-  .int()
-  .min(1, '当選人数は1名以上にしてください');
+export const winnerCountSchema = z.number().int().min(1, '当選人数は1名以上にしてください');
 
 export const validateWinnerCount = (
   requestedCount: number,

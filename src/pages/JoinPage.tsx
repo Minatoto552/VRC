@@ -28,13 +28,13 @@ export const JoinPage = ({ guideNote }: JoinPageProps) => (
     <PageIntro
       eyebrow="Join Guide"
       title="入部案内"
-      description="説明会までの流れを、店内の案内板を見るような感覚で順番に確認できます。はじめての方でも迷いにくいよう、必要な行動だけを短く整理しています。"
+      description="説明会から面接までの流れを、初めての人でも迷いにくいように整理したページです。"
       imageSrc={illustrations.joinGuide}
-      imageAlt="入部案内を示すカフェ風イラスト"
+      imageAlt="入部案内を支えるキャラクターイラスト"
       caption="Join Flow"
-      chips={['説明会後に軽い面接を予定', 'フレンド申請だけでは入部完了になりません']}
+      chips={['説明会後に軽い面接を実施予定', 'フレンド申請だけでは入部完了になりません']}
     >
-      <strong>参加前のポイント</strong>
+      <strong>最初の一歩</strong>
       <p>プロフィール確認、フレンド申請、説明会参加の順に進めるとスムーズです。</p>
     </PageIntro>
 
@@ -43,17 +43,17 @@ export const JoinPage = ({ guideNote }: JoinPageProps) => (
         <article className="metric-card">
           <span>Step Count</span>
           <strong>{joinSteps.length}</strong>
-          <p>必要な行動を絞って並べているので、最初に全体像をつかみやすくしています。</p>
+          <p>手順を順番に追うだけで、参加前に必要な流れをつかめるようにしています。</p>
         </article>
         <article className="metric-card">
           <span>First Action</span>
           <strong>プロフィール確認</strong>
-          <p>最初に部長のVRChatプロフィールを確認すると、その後の流れを追いやすくなります。</p>
+          <p>最初に部長のVRChatプロフィールを確認し、説明会への導線につなげてください。</p>
         </article>
         <article className="metric-card">
           <span>Interview Style</span>
-          <strong>軽い面接</strong>
-          <p>威圧的な選考ではなく、お互いに安心して活動できるかを確認するための案内です。</p>
+          <strong>軽い確認</strong>
+          <p>面接は選考ではなく、活動方針のすり合わせを目的とした簡単な確認です。</p>
         </article>
       </div>
     </section>

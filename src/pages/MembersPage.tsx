@@ -15,15 +15,15 @@ export const MembersPage = ({ members }: MembersPageProps) => {
       <PageIntro
         eyebrow="Cast Members"
         title="部員紹介"
-        description="運営の顔ぶれやプロフィールカードを見ながら、役職や担当、この人となりを知ってもらえるように整理しました。部長と副部長は少し目を引く見せ方にしつつ、全員が同じ空気感で並ぶようまとめています。"
+        description="役職、担当、好きな飲み物まで、公開中のメンバー情報を一覧で見られるページです。"
         imageSrc={illustrations.membersGuide}
-        imageAlt="部員紹介を案内するカフェ風イラスト"
+        imageAlt="部員紹介を案内するキャラクターイラスト"
         caption="Members Wall"
         chips={[`公開中の部員: ${members.length}名`, `リーダー表示: ${leadershipCount}名`]}
         reverse
       >
-        <strong>プロフィールの見かた</strong>
-        <p>役職、担当、好きな飲み物まで並べて表示し、初見でも雰囲気をつかみやすいカード構成にしています。</p>
+        <strong>プロフィールの見どころ</strong>
+        <p>役職や担当だけでなく、短い自己紹介と好きな飲み物もあわせて確認できます。</p>
       </PageIntro>
 
       <section className="section-card">
@@ -31,17 +31,17 @@ export const MembersPage = ({ members }: MembersPageProps) => {
           <article className="metric-card">
             <span>Public Members</span>
             <strong>{members.length}名</strong>
-            <p>公開中の部員だけを表示し、役職や担当がすぐ分かる構成にしています。</p>
+            <p>公開中のメンバーだけを表示し、初見でも把握しやすい構成にしています。</p>
           </article>
           <article className="metric-card">
             <span>Leadership</span>
             <strong>{leadershipCount}名</strong>
-            <p>部長と副部長は少し強めのカードで見せ、チームの中心が把握しやすくなっています。</p>
+            <p>部長と副部長は少し目立つカードとして見分けやすく表示しています。</p>
           </article>
           <article className="metric-card">
             <span>Profile Tone</span>
-            <strong>人柄重視</strong>
-            <p>役割だけでなく、短い自己紹介や好きな飲み物も添えて親しみやすさを残しています。</p>
+            <strong>親しみやすさ重視</strong>
+            <p>長いVRC名でも崩れにくいよう、余白と改行のバランスを整えています。</p>
           </article>
         </div>
       </section>

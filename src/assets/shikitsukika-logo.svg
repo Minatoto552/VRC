@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 300" role="img" aria-label="四季月家のロゴ">
+  <defs>
+    <linearGradient id="frame" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#eed8b0" />
+      <stop offset="50%" stop-color="#f3dfbc" />
+      <stop offset="100%" stop-color="#e8d2a8" />
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe07d" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#ffe07d" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="moonFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffd84d" />
+      <stop offset="100%" stop-color="#f6b300" />
+    </linearGradient>
+  </defs>
+
+  <rect x="42" y="42" width="1356" height="6" rx="3" fill="url(#frame)" />
+  <rect x="42" y="250" width="1356" height="6" rx="3" fill="url(#frame)" />
+
+  <g transform="translate(96 78)">
+    <circle cx="40" cy="28" r="9" fill="#f8d9c8" />
+    <path d="M40 0c11 19 11 40 0 56C29 40 29 19 40 0Z" fill="#f790bf" />
+    <path d="M4 28c19-10 43-10 72 0-20 10-44 10-72 0Z" fill="#ff9dc8" />
+    <path d="M14 10c20 2 36 13 43 29-19 1-36-10-43-29Z" fill="#ff86bf" />
+    <path d="M66 10C46 12 30 23 23 39c19 1 36-10 43-29Z" fill="#ff86bf" />
+  </g>
+
+  <g transform="translate(62 142)">
+    <rect x="44" y="18" width="10" height="72" rx="5" fill="#dbc7a5" />
+    <circle cx="50" cy="80" r="46" fill="#6dcf72" opacity="0.94" />
+    <circle cx="94" cy="108" r="40" fill="#61bb65" opacity="0.97" />
+    <circle cx="14" cy="118" r="36" fill="#8ce08d" opacity="0.9" />
+    <path d="M48 86c14 18 25 41 32 78" stroke="#dbc7a5" stroke-width="9" stroke-linecap="round" fill="none" />
+    <path d="M50 104c-14 15-27 35-39 61" stroke="#dbc7a5" stroke-width="9" stroke-linecap="round" fill="none" />
+  </g>
+
+  <g transform="translate(1120 62)">
+    <path d="M62 0c22 22 21 58 0 80-22-22-22-58 0-80Z" fill="#ff8550" />
+    <path d="M62 0c-10 24-6 53 15 80" stroke="#f7d6c0" stroke-width="6" stroke-linecap="round" fill="none" />
+    <path d="M0 22c20 0 43 8 62 20-18 12-40 18-62 15 10-13 10-22 0-35Z" fill="#ff7438" />
+    <path d="M124 22c-20 0-43 8-62 20 18 12 40 18 62 15-10-13-10-22 0-35Z" fill="#ff7438" />
+  </g>
+
+  <g transform="translate(1188 164)">
+    <path d="M48 0c19 19 19 49 0 68-19-19-19-49 0-68Z" fill="#ff8b50" />
+    <path d="M0 22c18 0 36 7 52 17-15 11-33 16-52 13 8-10 8-20 0-30Z" fill="#ffa06a" />
+    <path d="M96 22c-18 0-36 7-52 17 15 11 33 16 52 13-8-10-8-20 0-30Z" fill="#ffa06a" />
+  </g>
+
+  <g transform="translate(1260 190)">
+    <circle cx="42" cy="42" r="11" fill="#def7ff" />
+    <g stroke="#73cdf7" stroke-width="7" stroke-linecap="round">
+      <path d="M42 0v84" />
+      <path d="M0 42h84" />
+      <path d="M12 12l60 60" />
+      <path d="M72 12 12 72" />
+    </g>
+  </g>
+
+  <g transform="translate(635 72)">
+    <ellipse cx="88" cy="86" rx="132" ry="84" fill="url(#moonGlow)" />
+    <path d="M88 0c57 34 64 132 0 178 29-51 29-127 0-178Z" fill="url(#moonFill)" />
+    <path
+      d="M72 20c-20 21-31 46-31 69 0 28 14 55 39 76"
+      fill="none"
+      stroke="#fff6d7"
+      stroke-opacity="0.82"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <text
+    x="720"
+    y="102"
+    text-anchor="middle"
+    fill="#1b1411"
+    font-size="46"
+    font-family="'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP', sans-serif"
+    letter-spacing="1.2"
+  >
+    2026年3月同期会キャスト部
+  </text>
+
+  <text
+    x="720"
+    y="226"
+    text-anchor="middle"
+    fill="#17110d"
+    font-size="124"
+    font-family="'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif"
+    letter-spacing="4"
+  >
+    四季月家
+  </text>
+</svg>

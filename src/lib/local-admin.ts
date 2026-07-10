@@ -6,12 +6,9 @@ import type {
   PublicContent,
   SiteSettings,
 } from '../../shared/models';
-import {
-  activitySchema,
-  memberSchema,
-  siteSettingsSchema,
-} from '../../shared/validation';
+import { activitySchema, memberSchema, siteSettingsSchema } from '../../shared/validation';
 import { sampleActivities, sampleMembers, sampleSettings } from './sample-data';
+import { normalizeSiteSettings } from './site-settings';
 
 export const LOCAL_ADMIN_PASSWORD = '1112';
 
@@ -42,7 +39,7 @@ const getFirstIssueMessage = (
 const buildInitialAdminContent = (): AdminContent => ({
   activities: clone(sampleActivities),
   members: clone(sampleMembers),
-  settings: clone(sampleSettings),
+  settings: normalizeSiteSettings(clone(sampleSettings)),
   entries: [],
   draws: [],
   audits: [],
@@ -103,10 +100,10 @@ export const loadLocalAdminContent = (): AdminContent => {
       entries: Array.isArray(parsed.entries) ? parsed.entries : [],
       draws: Array.isArray(parsed.draws) ? parsed.draws : [],
       audits: Array.isArray(parsed.audits) ? parsed.audits : [],
-      settings: {
+      settings: normalizeSiteSettings({
         ...sampleSettings,
         ...(parsed.settings ?? {}),
-      },
+      }),
       mode: 'sample',
     };
   } catch {
@@ -234,7 +231,8 @@ export const deleteLocalMember = (memberId: string): void => {
 };
 
 export const updateLocalSiteSettings = (settings: SiteSettings): void => {
-  const parsed = siteSettingsSchema.safeParse(settings);
+  const normalized = normalizeSiteSettings(settings);
+  const parsed = siteSettingsSchema.safeParse(normalized);
   if (!parsed.success) {
     throw new Error(getFirstIssueMessage(parsed, 'サイト設定を確認してください。'));
   }

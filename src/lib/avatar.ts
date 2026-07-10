@@ -8,7 +8,7 @@ const escapeSvgText = (value: string): string =>
 
 export const buildAvatarImage = (label: string, accentText: string): string => {
   const safeLabel = escapeSvgText(label.slice(0, 3) || 'VR');
-  const safeAccent = escapeSvgText(accentText.slice(0, 18) || 'Event Cafe');
+  const safeAccent = escapeSvgText(accentText.slice(0, 18) || '四季月家');
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="${safeAccent}">
       <defs>

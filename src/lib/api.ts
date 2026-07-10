@@ -23,15 +23,12 @@ import type {
   PublicContent,
   SiteSettings,
 } from '../../shared/models';
-import {
-  activitySchema,
-  memberSchema,
-  siteSettingsSchema,
-} from '../../shared/validation';
+import { activitySchema, memberSchema, siteSettingsSchema } from '../../shared/validation';
 import { firebaseServices, runtimeMode } from './firebase';
 import {
   deleteLocalActivity,
   deleteLocalMember,
+  isLocalAdminSignedIn,
   loadLocalAdminContent,
   loadLocalPublicContent,
   loginWithLocalPassword,
@@ -41,10 +38,13 @@ import {
   upsertLocalMember,
 } from './local-admin';
 import { sampleSettings } from './sample-data';
+import { normalizeSiteSettings } from './site-settings';
 
 export const PUBLIC_CONTENT_UPDATED_EVENT = 'event-cafe-public-content-updated';
 
 const canUseFirestore = (): boolean => Boolean(firebaseServices.firestore);
+
+const shouldUseLocalAdminData = (): boolean => !canUseFirestore() || isLocalAdminSignedIn();
 
 const emitPublicContentUpdated = (): void => {
   if (typeof window !== 'undefined') {
@@ -75,15 +75,19 @@ const getFirstIssueMessage = (
 
 const loadFirestoreSettings = async (): Promise<SiteSettings> => {
   if (!firebaseServices.firestore) {
-    return sampleSettings;
+    return normalizeSiteSettings(sampleSettings);
   }
 
   const snapshot = await getDoc(doc(firebaseServices.firestore, 'siteSettings', 'public'));
-
-  return snapshot.exists() ? { ...sampleSettings, ...snapshot.data() } : sampleSettings;
+  return normalizeSiteSettings(snapshot.exists() ? { ...sampleSettings, ...snapshot.data() } : sampleSettings);
 };
 
-const writeAuditLog = async (message: string, action: string, targetType: string, targetId: string): Promise<void> => {
+const writeAuditLog = async (
+  message: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+): Promise<void> => {
   if (!firebaseServices.firestore) {
     return;
   }
@@ -104,7 +108,7 @@ const writeAuditLog = async (message: string, action: string, targetType: string
 };
 
 export const loadPublicContent = async (): Promise<PublicContent> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (!canUseFirestore() || !firebaseServices.firestore || isLocalAdminSignedIn()) {
     return loadLocalPublicContent();
   }
 
@@ -134,25 +138,19 @@ export const loadPublicContent = async (): Promise<PublicContent> => {
 };
 
 export const loadAdminContent = async (): Promise<AdminContent> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
     return loadLocalAdminContent();
   }
 
-  const [
-    activitiesSnapshot,
-    membersSnapshot,
-    entriesSnapshot,
-    drawsSnapshot,
-    auditsSnapshot,
-    settings,
-  ] = await Promise.all([
-    getDocs(query(collection(firebaseServices.firestore, 'activities'), orderBy('date', 'asc'))),
-    getDocs(query(collection(firebaseServices.firestore, 'members'), orderBy('sortOrder', 'asc'))),
-    getDocs(query(collection(firebaseServices.firestore, 'lotteryEntries'), orderBy('createdAt', 'desc'))),
-    getDocs(query(collection(firebaseServices.firestore, 'lotteryDraws'), orderBy('createdAt', 'desc'))),
-    getDocs(query(collection(firebaseServices.firestore, 'adminAuditLogs'), orderBy('createdAt', 'desc'), limit(12))),
-    loadFirestoreSettings(),
-  ]);
+  const [activitiesSnapshot, membersSnapshot, entriesSnapshot, drawsSnapshot, auditsSnapshot, settings] =
+    await Promise.all([
+      getDocs(query(collection(firebaseServices.firestore, 'activities'), orderBy('date', 'asc'))),
+      getDocs(query(collection(firebaseServices.firestore, 'members'), orderBy('sortOrder', 'asc'))),
+      getDocs(query(collection(firebaseServices.firestore, 'lotteryEntries'), orderBy('createdAt', 'desc'))),
+      getDocs(query(collection(firebaseServices.firestore, 'lotteryDraws'), orderBy('createdAt', 'desc'))),
+      getDocs(query(collection(firebaseServices.firestore, 'adminAuditLogs'), orderBy('createdAt', 'desc'), limit(12))),
+      loadFirestoreSettings(),
+    ]);
 
   return {
     activities: activitiesSnapshot.docs.map((snapshot) => toEntity<Activity>(snapshot)),
@@ -176,7 +174,7 @@ export const logoutAdmin = (): Promise<void> => {
 };
 
 export const upsertActivity = async (activity: Activity): Promise<void> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
     upsertLocalActivity(activity);
     emitPublicContentUpdated();
     return;
@@ -188,24 +186,24 @@ export const upsertActivity = async (activity: Activity): Promise<void> => {
   }
 
   await setDoc(doc(firebaseServices.firestore, 'activities', parsed.data.id), parsed.data, { merge: true });
-  await writeAuditLog(`活動予定「${parsed.data.title}」を保存しました。`, '活動予定変更', 'activities', parsed.data.id);
+  await writeAuditLog(`活動予定「${parsed.data.title}」を保存しました。`, 'activity-saved', 'activities', parsed.data.id);
   emitPublicContentUpdated();
 };
 
 export const deleteActivity = async (activityId: string): Promise<void> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
     deleteLocalActivity(activityId);
     emitPublicContentUpdated();
     return;
   }
 
   await deleteDoc(doc(firebaseServices.firestore, 'activities', activityId));
-  await writeAuditLog('活動予定を削除しました。', '活動予定変更', 'activities', activityId);
+  await writeAuditLog('活動予定を削除しました。', 'activity-deleted', 'activities', activityId);
   emitPublicContentUpdated();
 };
 
 export const upsertMember = async (member: MemberProfile): Promise<void> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
     upsertLocalMember(member);
     emitPublicContentUpdated();
     return;
@@ -217,35 +215,37 @@ export const upsertMember = async (member: MemberProfile): Promise<void> => {
   }
 
   await setDoc(doc(firebaseServices.firestore, 'members', parsed.data.id), parsed.data, { merge: true });
-  await writeAuditLog(`部員「${parsed.data.vrcName}」を保存しました。`, '部員情報変更', 'members', parsed.data.id);
+  await writeAuditLog(`部員「${parsed.data.vrcName}」を保存しました。`, 'member-saved', 'members', parsed.data.id);
   emitPublicContentUpdated();
 };
 
 export const deleteMember = async (memberId: string): Promise<void> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
     deleteLocalMember(memberId);
     emitPublicContentUpdated();
     return;
   }
 
   await deleteDoc(doc(firebaseServices.firestore, 'members', memberId));
-  await writeAuditLog('部員情報を削除しました。', '部員情報変更', 'members', memberId);
+  await writeAuditLog('部員情報を削除しました。', 'member-deleted', 'members', memberId);
   emitPublicContentUpdated();
 };
 
 export const updateSiteSettings = async (settings: SiteSettings): Promise<void> => {
-  if (!canUseFirestore() || !firebaseServices.firestore) {
-    updateLocalSiteSettings(settings);
+  const normalized = normalizeSiteSettings(settings);
+
+  if (shouldUseLocalAdminData() || !firebaseServices.firestore) {
+    updateLocalSiteSettings(normalized);
     emitPublicContentUpdated();
     return;
   }
 
-  const parsed = siteSettingsSchema.safeParse(settings);
+  const parsed = siteSettingsSchema.safeParse(normalized);
   if (!parsed.success) {
     throw new Error(getFirstIssueMessage(parsed, 'サイト設定を確認してください。'));
   }
 
   await setDoc(doc(firebaseServices.firestore, 'siteSettings', 'public'), parsed.data, { merge: true });
-  await writeAuditLog('サイト設定を保存しました。', 'サイト設定変更', 'siteSettings', 'public');
+  await writeAuditLog('サイト設定を保存しました。', 'site-settings-saved', 'siteSettings', 'public');
   emitPublicContentUpdated();
 };

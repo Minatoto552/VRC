@@ -1,11 +1,10 @@
 import {
   ArrowRight,
   CalendarDays,
+  Camera,
   ChevronDown,
   Coffee,
   DoorOpen,
-  LampDesk,
-  MoonStar,
   Users,
 } from 'lucide-react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
@@ -15,7 +14,7 @@ import { Link } from 'react-router-dom';
 import type { PublicContent } from '../../shared/models';
 import { illustrations } from '../assets/illustrations';
 import { PhotoMarquee } from '../components/PhotoMarquee';
-import { formatDate, formatTimeRange, findNextActivity } from '../lib/format';
+import { findNextActivity, formatDate, formatTimeRange } from '../lib/format';
 import { fallbackPhotoStripItems } from '../lib/photo-strip';
 
 interface HomePageProps {
@@ -29,59 +28,67 @@ const fadeUp = {
 
 const bentoItems = [
   {
-    title: 'イベント紹介',
-    description:
-      '夜のカフェBarをテーマにした、初めての人でも入りやすいVRChatイベントです。',
+    title: 'イベントの概要',
+    description: '四季月家の世界観や、VRChat上で開くカフェBarイベントの雰囲気を紹介します。',
     icon: Coffee,
     label: 'Concept',
-    meta: '世界観を確認',
+    meta: '店内と企画の案内',
     to: '/concept',
     tone: 'amber',
   },
   {
     title: '活動予定',
-    description: '次回の開催日、時間、集合場所をスマホでも読みやすい形で確認できます。',
+    description: '次回の開催日や内容、対象者、集合場所を月カレンダーで確認できます。',
     icon: CalendarDays,
     label: 'Schedule',
-    meta: '予定と詳細',
+    meta: '日付から確認',
     to: '/schedule',
     tone: 'green',
   },
   {
     title: '部員紹介',
-    description: '役職や担当、好きな飲み物など、イベント部の雰囲気が分かる紹介ページです。',
+    description: '役職、担当、好きな飲み物まで、公開中のメンバー情報を一覧で見られます。',
     icon: Users,
-    label: 'Cast',
-    meta: '公開中の部員',
+    label: 'Members',
+    meta: 'キャストの顔ぶれ',
     to: '/members',
     tone: 'navy',
   },
   {
     title: '入部案内',
-    description: 'プロフィール確認から説明会、軽い面接までの流れを順番に案内します。',
+    description: '説明会から面接までの流れを、初めての人でも迷わない順序でまとめています。',
     icon: DoorOpen,
     label: 'Join',
-    meta: '6 steps',
+    meta: '6ステップ',
     to: '/join',
     tone: 'rose',
+  },
+  {
+    title: '写真アーカイブ',
+    description: 'イベント写真、日常スライド、ポスター作品をカテゴリ別に見られる写真ページです。',
+    icon: Camera,
+    label: 'Photos',
+    meta: '横スライド / 縦ポスター',
+    to: '/photos',
+    tone: 'amber',
   },
 ] as const;
 
 const faqItems = [
   {
-    question: 'イベント部はどのような活動をしていますか？',
+    question: '四季月家ではどのような活動をしていますか？',
     answer:
-      'VRChat上でカフェ風のBarイベントを企画し、会場案内、接客、進行、広報、演出などを分担して運営します。',
+      'VRChat上でカフェBarイベントを企画・運営し、説明会やリハーサル、接客導線の調整も行っています。詳細は運営へ確認してください。',
   },
   {
     question: 'VRChat初心者でも入部できますか？',
     answer:
-      '初心者でも参加できます。必要な準備や活動方針は説明会で確認できます。詳細は運営へ確認してください。',
+      '初心者でも参加できます。説明会で活動内容を案内したうえで進めるので、まずは入部案内ページから流れを確認してください。',
   },
   {
-    question: '参加前に確認しておくことはありますか？',
+    question: '写真やポスターはどこで見られますか？',
     answer:
-      '活動予定、集合場所、対象者を確認してください。入部希望の場合は部長のVRChatプロフィールから案内を受け取る流れです。',
+      '写真ページに、イベント写真、キャストの日常、ポスター作品をカテゴリごとにまとめています。',
   },
 ] as const;
 
@@ -96,8 +103,8 @@ export const HomePage = ({ content }: HomePageProps) => {
     offset: ['start start', 'end start'],
   });
 
-  const heroImageY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 48]);
-  const heroTextY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, -24]);
+  const heroImageY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 42]);
+  const heroTextY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, -18]);
   const nextActivity = findNextActivity(content.activities);
   const nextActivityDate = nextActivity
     ? `${formatDate(nextActivity.date)} / ${formatTimeRange(nextActivity.startTime, nextActivity.endTime)}`
@@ -116,18 +123,10 @@ export const HomePage = ({ content }: HomePageProps) => {
         transition={{ duration: 0.62, ease: [0.2, 0.72, 0.2, 1] }}
       >
         <motion.div className="home-hero-copy" style={{ y: heroTextY }}>
-          <span className="home-hero-chip">
-            <LampDesk size={16} />
-            VRChat Cafe Bar / 2026 March
-          </span>
           <h1>
-            同期のみんなでつくる、
-            <span>少し特別なカフェ時間。</span>
+            <span>夜のカフェBarへ、ようこそ。</span>
           </h1>
-          <p>
-            2026年3月同期会イベント部では、VRChat上でカフェ風のBarイベントを企画・運営しています。
-            活動予定、部員紹介、入部案内まで、迷わず見られるように整えました。
-          </p>
+          <p>{content.settings.siteDescription}</p>
           <div className="home-hero-actions">
             <MotionLink
               to="/schedule"
@@ -146,14 +145,14 @@ export const HomePage = ({ content }: HomePageProps) => {
               入部方法を見る
             </MotionLink>
           </div>
-          <dl className="home-hero-proof" aria-label="サイト内の主要情報">
+          <dl className="home-hero-proof" aria-label="サイトの主な情報">
             <div>
               <dt>Next</dt>
               <dd>{nextActivityDate}</dd>
             </div>
             <div>
               <dt>Cast</dt>
-              <dd>{content.members.length}名公開中</dd>
+              <dd>{content.members.length}名を公開中</dd>
             </div>
           </dl>
         </motion.div>
@@ -164,7 +163,7 @@ export const HomePage = ({ content }: HomePageProps) => {
             <span className="home-art-orbit home-art-orbit-two" aria-hidden="true" />
             <img
               src={illustrations.welcomeGuide}
-              alt="Event Cafeへ案内するキャラクター"
+              alt="四季月家へ案内するキャラクターイラスト"
               className="home-hero-character"
               loading="eager"
               decoding="async"
@@ -173,11 +172,11 @@ export const HomePage = ({ content }: HomePageProps) => {
           </div>
           <div className="home-floating-card home-floating-card-next" aria-hidden="true">
             <span>Next Event</span>
-            <strong>{nextActivity?.title ?? '調整中'}</strong>
+            <strong>{nextActivity?.title ?? '活動予定を調整中'}</strong>
           </div>
           <div className="home-floating-card home-floating-card-menu" aria-hidden="true">
-            <span>Menu</span>
-            <strong>Cafe / Bar / VRChat</strong>
+            <span>Photo Menu</span>
+            <strong>Event / Daily / Poster</strong>
           </div>
         </motion.div>
       </motion.section>
@@ -191,38 +190,37 @@ export const HomePage = ({ content }: HomePageProps) => {
       >
         <motion.article variants={fadeUp} className="bento-panel bento-summary-panel gsap-card">
           <div className="bento-panel-kicker">
-            <MoonStar size={18} />
-            Event Café
+            <Coffee size={18} />
+            Event Overview
           </div>
-          <h2>見たい情報へ、少ないステップで。</h2>
+          <h2>同期のみんなでつくる、少し特別なカフェ時間。</h2>
           <p>
-            予定、部員、入部案内をそれぞれ独立したカードに整理しました。余白を広く取り、
-            スマホでもPCでも読みやすい導線にしています。
+            2026年3月同期会キャスト部が、夜の店内演出とやわらかな接客導線を両立させたVRChatイベントを案内します。
+            活動予定、部員紹介、入部案内、写真アーカイブをひとつの流れで確認できます。
           </p>
-          <div className="bento-mini-metrics" aria-label="サイト概要">
+          <div className="bento-mini-metrics" aria-label="サイトの特徴">
             <span>Mobile first</span>
             <span>Warm cafe tone</span>
-            <span>Public guide</span>
+            <span>Photo managed in admin</span>
           </div>
         </motion.article>
 
         <motion.article variants={fadeUp} className="bento-panel bento-next-compact gsap-card">
           <div className="bento-panel-kicker">
             <CalendarDays size={18} />
-            Next
+            Next Schedule
           </div>
           {nextActivity ? (
             <>
               <h2>{nextActivity.title}</h2>
               <p>
-                {formatDate(nextActivity.date)} /{' '}
-                {formatTimeRange(nextActivity.startTime, nextActivity.endTime)}
+                {formatDate(nextActivity.date)} / {formatTimeRange(nextActivity.startTime, nextActivity.endTime)}
               </p>
             </>
           ) : (
             <>
-              <h2>次回の活動は調整中です。</h2>
-              <p>公開できる予定が決まり次第、活動予定ページへ反映します。</p>
+              <h2>次回の活動は現在調整中です。</h2>
+              <p>公開用の予定が登録されると、ここに最新情報が反映されます。</p>
             </>
           )}
           <Link to="/schedule" className="inline-link">
@@ -256,17 +254,17 @@ export const HomePage = ({ content }: HomePageProps) => {
       <section className="home-story-split gsap-reveal">
         <div className="home-story-copy">
           <span className="bento-panel-kicker">Flow</span>
-          <h2>カフェの入口から、必要な案内まで自然につながる構成。</h2>
+          <h2>入口から写真アーカイブまで、見たい情報にすぐ届く構成です。</h2>
           <p>
-            上部では写真ギャラリーで雰囲気を伝え、中央では活動予定とメンバー情報へ誘導します。
-            最後に入部案内とFAQで不安を残さないようにしています。
+            上部の写真スライドで空気感をつかみ、トップで全体像を確認し、そのまま活動予定、部員紹介、入部案内、
+            写真ページへ自然につながるように並べています。
           </p>
         </div>
         <div className="home-story-board" aria-hidden="true">
-          <span>01 Atmosphere</span>
+          <span>01 Event Intro</span>
           <span>02 Schedule</span>
           <span>03 Members</span>
-          <span>04 Join</span>
+          <span>04 Photos</span>
         </div>
       </section>
 

@@ -12,6 +12,8 @@ import { FaqPage } from './pages/FaqPage';
 import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
 import { MembersPage } from './pages/MembersPage';
+import { PhotoCategoryPage } from './pages/PhotoCategoryPage';
+import { PhotosPage } from './pages/PhotosPage';
 import { SchedulePage } from './pages/SchedulePage';
 
 const App = () => {
@@ -203,6 +205,8 @@ const App = () => {
         <Route path="/schedule" element={<SchedulePage activities={content.activities} />} />
         <Route path="/members" element={<MembersPage members={content.members} />} />
         <Route path="/join" element={<JoinPage guideNote={content.settings.joinGuideNote} />} />
+        <Route path="/photos" element={<PhotosPage />} />
+        <Route path="/photos/:categoryId" element={<PhotoCategoryPage />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>

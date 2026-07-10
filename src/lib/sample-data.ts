@@ -1,20 +1,25 @@
 import type { Activity, MemberProfile, PublicContent, SiteSettings } from '../../shared/models';
+import {
+  defaultJoinGuideNote,
+  defaultSiteDescription,
+  defaultSiteName,
+} from './site-settings';
 
-const timestamp = '2026-06-29T12:00:00.000Z';
+const timestamp = '2026-07-08T12:00:00.000Z';
 
 export const sampleActivities: Activity[] = [
   {
     id: 'activity-01',
-    title: 'Cafe Night Preview',
+    title: '四季月家 プレオープンナイト',
     kind: 'public-event',
     date: '2026-03-14',
     startTime: '21:00',
     endTime: '23:00',
     description:
-      '一般のお客様向けに、落ち着いた夜のカフェBarの雰囲気を体験してもらう公開イベントです。',
-    meetingPoint: 'VRCワールド入口',
+      '一般のお客様向けに、店内の雰囲気とキャストの接客フローを体験してもらう公開イベントです。',
+    meetingPoint: 'VRChat ワールド入口前',
     targetAudience: '一般参加者',
-    notes: 'ドレスコードはありません。初参加の方にも分かりやすい案内を行います。',
+    notes: 'ドレスコードはありません。表示名はVRC名でご参加ください。',
     isPublic: true,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -26,10 +31,10 @@ export const sampleActivities: Activity[] = [
     date: '2026-03-10',
     startTime: '22:00',
     endTime: '23:00',
-    description: '本番日の進行確認と案内フローの最終調整を行います。',
+    description: '本番当日の導線確認と、キャストごとの役割整理を行う内部ミーティングです。',
     meetingPoint: 'スタッフ控室',
     targetAudience: '部員',
-    notes: '公開サイトでは非表示の内部予定です。',
+    notes: '公開サイトには表示しない内部向け予定です。',
     isPublic: false,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -41,10 +46,10 @@ export const sampleActivities: Activity[] = [
     date: '2026-03-21',
     startTime: '20:30',
     endTime: '21:15',
-    description: 'イベント部の活動方針と入部方法を案内する説明会です。',
-    meetingPoint: 'Event Cafe ラウンジ',
+    description: 'イベント部の活動内容や参加方法を案内する、入部希望者向けの説明会です。',
+    meetingPoint: '四季月家 ラウンジ',
     targetAudience: '入部希望者',
-    notes: '説明会後に軽い面接の時間を設けます。',
+    notes: '説明会後に軽い面接の案内を行います。',
     isPublic: true,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -58,8 +63,8 @@ export const sampleMembers: MemberProfile[] = [
     avatarLabel: '01',
     avatarImageUrl: '',
     role: '部長',
-    duties: '全体進行 / 運営調整',
-    bio: '初めての方でも安心して過ごせる、やわらかな空間づくりを目指しています。',
+    duties: '全体進行 / 接客設計',
+    bio: '初めて来る方でも落ち着ける空気づくりを大切にしています。',
     favoriteDrink: 'カフェラテ',
     status: '在籍中',
     isPublic: true,
@@ -74,8 +79,8 @@ export const sampleMembers: MemberProfile[] = [
     avatarLabel: '02',
     avatarImageUrl: '',
     role: '副部長',
-    duties: '広報 / リハーサル調整',
-    bio: '参加者のみなさんが迷わず楽しめる導線づくりを担当しています。',
+    duties: '案内 / リハーサル調整',
+    bio: '参加者もキャストも安心できる運営導線を整えるのが担当です。',
     favoriteDrink: 'ほうじ茶ラテ',
     status: '在籍中',
     isPublic: true,
@@ -90,8 +95,8 @@ export const sampleMembers: MemberProfile[] = [
     avatarLabel: '03',
     avatarImageUrl: '',
     role: '技術担当',
-    duties: '配信 / 演出調整',
-    bio: 'カフェらしい照明と見やすい案内表示を支える演出まわりを整えています。',
+    duties: '告知 / 表示演出',
+    bio: '見やすいサイトと、イベント当日の演出サポートを担当しています。',
     favoriteDrink: 'アイスコーヒー',
     status: '在籍中',
     isPublic: true,
@@ -103,14 +108,12 @@ export const sampleMembers: MemberProfile[] = [
 ];
 
 export const sampleSettings: SiteSettings = {
-  siteName: '2026年3月同期会 Event Cafe',
-  siteDescription:
-    'VRChat上で開催する、あたたかく親しみやすいカフェBarイベントの公開サイトです。会場案内から活動予定、部員紹介、入部案内まで一続きで確認できます。',
+  siteName: defaultSiteName,
+  siteDescription: defaultSiteDescription,
   lotteryStatus: 'closed',
-  lotteryNotice: '抽選受付は現在使用していません。',
-  joinGuideNote:
-    '説明会後に軽い面接を予定しています。詳細は運営からの案内を確認してください。',
-  supportEmail: 'event-cafe@example.com',
+  lotteryNotice: '現在、抽選受付は使用していません。',
+  joinGuideNote: defaultJoinGuideNote,
+  supportEmail: 'cast@example.com',
   updatedAt: timestamp,
 };
 

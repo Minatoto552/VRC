@@ -26,27 +26,27 @@ const normalizeSource = (value: string): string =>
 
 export const fallbackPhotoStripItems: PhotoStripItem[] = [
   {
-    alt: 'カウンター風の写真枠',
-    caption: 'Counter Light',
-    note: 'あとからイベント当日のカウンター写真を追加できます',
+    alt: 'カウンターまわりの写真プレースホルダー',
+    caption: 'Event Scene',
+    note: 'イベント当日の写真を登録すると、ここへ横長スライドで流れます。',
     tone: 'counter',
   },
   {
-    alt: '窓際風の写真枠',
-    caption: 'Window Mood',
-    note: '横長の店内写真や夜景カットに向いています',
+    alt: '日常スナップの写真プレースホルダー',
+    caption: 'Daily Scene',
+    note: '日常スライド用の写真を追加すると、やわらかな空気感で表示されます。',
     tone: 'window',
   },
   {
-    alt: 'メニューボード風の写真枠',
+    alt: 'メニューや掲示物の写真プレースホルダー',
     caption: 'Menu Board',
-    note: '告知画像やイベント風景の差し込みにおすすめです',
+    note: 'ポスターや告知作品を登録すると、写真ページからも一覧できます。',
     tone: 'menu',
   },
   {
-    alt: 'ラウンジ風の写真枠',
+    alt: 'ラウンジカットの写真プレースホルダー',
     caption: 'Lounge Cut',
-    note: '後日 gallery マニフェストを追加すると、ここへ写真を流せます',
+    note: '運営ページの写真管理タブから、あとでまとめて差し替えられます。',
     tone: 'lounge',
   },
 ];
